@@ -3,9 +3,13 @@ import HomeGraph from "./graph";
 
 const HomePage = () => {
   return (
-    <div className="space-y-8 p-6"> 
+    <div className="space-y-8 p-6">
       <HomeCards />
-      <HomeGraph />
+
+      {/* Graph section */}
+      <div className="w-full h-[500px]">  
+        <HomeGraph />
+      </div>
     </div>
   );
 };

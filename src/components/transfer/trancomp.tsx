@@ -64,6 +64,9 @@ const TransferTable = () => {
     reason: "",
   });
 
+  // 🔍 Search state
+  const [searchQuery, setSearchQuery] = useState("");
+
   // Handle transfer request submission
   const handleRequestTransfer = () => {
     const today = new Date().toISOString().split("T")[0];
@@ -105,10 +108,27 @@ const TransferTable = () => {
     setShowActionModal(false);
   };
 
+  // 🔍 Filter teachers based on search
+  const filteredTeachers = teachers.filter((t) =>
+    [t.name, t.nrc, t.currentSchool, t.newSchool, t.subject, t.position]
+      .join(" ")
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase())
+  );
+
   return (
     <div className="relative overflow-x-auto shadow-md sm:rounded-lg p-4">
-      {/* Request Transfer Button */}
-      <div className="flex justify-end mb-4">
+      {/* Top Controls: Search + Request Transfer Button */}
+      <div className="flex justify-between items-center mb-4">
+        {/* 🔍 Search Box */}
+        <input
+          type="text"
+          placeholder="Search teacher..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="px-4 py-2 border rounded-lg w-1/3 focus:outline-none focus:ring focus:border-indigo-400"
+        />
+
         <button
           onClick={() => setShowRequestModal(true)}
           className="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-blue-700"
@@ -135,31 +155,39 @@ const TransferTable = () => {
           </tr>
         </thead>
         <tbody>
-          {teachers.map((teacher, index) => (
-            <tr
-              key={index}
-              className="odd:bg-white odd:dark:bg-gray-900 even:bg-gray-50 even:dark:bg-gray-800 border-b dark:border-gray-700 border-gray-200"
-            >
-              <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">{teacher.name}</td>
-              <td className="px-6 py-4">{teacher.nrc}</td>
-              <td className="px-6 py-4">{teacher.currentSchool}</td>
-              <td className="px-6 py-4">{teacher.newSchool || "-"}</td>
-              <td className="px-6 py-4">{teacher.position}</td>
-              <td className="px-6 py-4">{teacher.subject}</td>
-              <td className="px-6 py-4">{teacher.experience}</td>
-              <td className="px-6 py-4">{teacher.status}</td>
-              <td className="px-6 py-4">{teacher.date || "-"}</td>
-              <td className="px-6 py-4">{teacher.reason || "-"}</td>
-              <td className="px-6 py-4">
-                <button
-                  onClick={() => openActionModal(teacher)}
-                  className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-700"
-                >
-                  Take Action
-                </button>
+          {filteredTeachers.length > 0 ? (
+            filteredTeachers.map((teacher, index) => (
+              <tr
+                key={index}
+                className="odd:bg-white odd:dark:bg-gray-900 even:bg-gray-50 even:dark:bg-gray-800 border-b dark:border-gray-700 border-gray-200"
+              >
+                <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">{teacher.name}</td>
+                <td className="px-6 py-4">{teacher.nrc}</td>
+                <td className="px-6 py-4">{teacher.currentSchool}</td>
+                <td className="px-6 py-4">{teacher.newSchool || "-"}</td>
+                <td className="px-6 py-4">{teacher.position}</td>
+                <td className="px-6 py-4">{teacher.subject}</td>
+                <td className="px-6 py-4">{teacher.experience}</td>
+                <td className="px-6 py-4">{teacher.status}</td>
+                <td className="px-6 py-4">{teacher.date || "-"}</td>
+                <td className="px-6 py-4">{teacher.reason || "-"}</td>
+                <td className="px-6 py-4">
+                  <button
+                    onClick={() => openActionModal(teacher)}
+                    className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-700"
+                  >
+                    Take Action
+                  </button>
+                </td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan={11} className="text-center py-4 text-gray-500">
+                No teachers found
               </td>
             </tr>
-          ))}
+          )}
         </tbody>
       </table>
 
