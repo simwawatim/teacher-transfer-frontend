@@ -22,11 +22,13 @@ const HeaderPage = () => {
 
           {/* Right Side: Profile */}
           <div className="flex items-center space-x-4">
-            <img
-              src={defaultImage}
-              alt="Profile"
-              className="w-10 h-10 rounded-full border-2 border-gray-600 shadow-sm cursor-pointer"
-            />
+            <a href="/profile">
+              <img
+                src={defaultImage}
+                alt="Profile"
+                className="w-10 h-10 rounded-full border-2 border-gray-600 shadow-sm cursor-pointer"
+              />
+            </a>
           </div>
         </div>
       </header>

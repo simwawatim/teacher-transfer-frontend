@@ -71,6 +71,7 @@ const Sidebar = () => {
 
                     <li>
                         <a
+                        href="/"
             
                         className="text-white-800 font-medium hover:text-white-900 hover:bg-indigo-500 text-[15px] flex items-center rounded px-4 py-2 transition-all"
                         >
