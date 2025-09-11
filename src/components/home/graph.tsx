@@ -25,13 +25,40 @@ const HomeGraph = () => {
     { month: "Dec", Pending: 12, Approved: 31, Rejected: 4 },
   ];
 
+  const renderLegendIcon = (value: string) => {
+    switch (value) {
+      case "Pending":
+        return "🕒"; // clock icon
+      case "Approved":
+        return "✅"; // check mark
+      case "Rejected":
+        return "❌"; // cross mark
+      default:
+        return null;
+    }
+  };
+
+  const renderCustomLegend = (props: any) => {
+    const { payload } = props;
+    return (
+      <div className="flex gap-4 justify-center mt-2">
+        {payload.map((entry: any, index: number) => (
+          <div key={index} className="flex items-center gap-1 text-white font-semibold">
+            <span>{renderLegendIcon(entry.value)}</span>
+            <span>{entry.value}</span>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   return (
-    <div className="w-full h-[20rem] p-6 bg-gray-900 rounded-lg shadow-md">
+    <div className="w-full h-[24rem] p-6 bg-gray-900 rounded-lg shadow-md">
       <h2 className="text-xl font-bold text-white mb-4">
         Teacher Transfers by Month
       </h2>
 
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width="100%" height="80%">
         <BarChart data={data}>
           <CartesianGrid strokeDasharray="3 3" stroke="#444" />
           <XAxis dataKey="month" stroke="#fff" />
@@ -39,11 +66,10 @@ const HomeGraph = () => {
           <Tooltip
             contentStyle={{ backgroundColor: "#1f2937", color: "#fff" }}
           />
-          <Legend wrapperStyle={{ color: "#fff" }} />
-          <Bar dataKey="Pending" fill="#d4aa1e" />    {/* darker yellow/gold */}
-<Bar dataKey="Approved" fill="#16a34a" />   {/* darker green */}
-<Bar dataKey="Rejected" fill="#b91c1c" />   {/* darker red */}
-
+          <Legend content={renderCustomLegend} />
+          <Bar dataKey="Pending" fill="#d4aa1e" />
+          <Bar dataKey="Approved" fill="#16a34a" />
+          <Bar dataKey="Rejected" fill="#b91c1c" />
         </BarChart>
       </ResponsiveContainer>
     </div>
