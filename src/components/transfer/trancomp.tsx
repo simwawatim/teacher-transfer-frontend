@@ -147,7 +147,6 @@ const TransferTable = () => {
             <th className="px-6 py-3">New School</th>
             <th className="px-6 py-3">Status</th>
             <th className="px-6 py-3">Date</th>
-            <th className="px-6 py-3">Reason</th>
             <th className="px-6 py-3">Action</th>
           </tr>
         </thead>
@@ -164,15 +163,15 @@ const TransferTable = () => {
                 <td className="px-6 py-4">{teacher.newSchool || "-"}</td>
                 <td className="px-6 py-4">{teacher.status}</td>
                 <td className="px-6 py-4">{teacher.date || "-"}</td>
-                <td className="px-6 py-4">{teacher.reason || "-"}</td>
                 <td className="px-6 py-4">
-                  <button
-                    onClick={() => openActionModal(teacher)}
-                    className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-700"
+                  <a
+                    href="/transfer-view"
+                    className="inline-block px-3 py-1 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors duration-200"
                   >
-                    Take Action
-                  </button>
+                    View
+                  </a>
                 </td>
+
               </tr>
             ))
           ) : (
