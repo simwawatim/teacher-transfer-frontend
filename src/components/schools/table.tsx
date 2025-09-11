@@ -118,68 +118,69 @@ const SchoolsTable = () => {
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-20 flex justify-center items-center z-50">
-          <div className="bg-gray-900 rounded-lg shadow-lg p-6 w-full max-w-md">
-            <h2 className="text-lg font-bold mb-4">Add New School</h2>
-            <div className="grid grid-cols-1 gap-4">
-              <input
-                type="text"
-                placeholder="School Name"
-                value={newSchool.name}
-                onChange={(e) =>
-                  setNewSchool({ ...newSchool, name: e.target.value })
-                }
-                className="px-3 py-2 border rounded"
-              />
+      <div className="fixed inset-0 bg-black bg-opacity-20 flex justify-center items-center z-50">
+        <div className="bg-gray-900 rounded-lg shadow-lg p-6 w-full max-w-md">
+          <h2 className="text-lg font-bold mb-4 text-white">Add New School</h2>
+          <div className="grid grid-cols-1 gap-4">
+            <input
+              type="text"
+              placeholder="School Name"
+              value={newSchool.name}
+              onChange={(e) =>
+                setNewSchool({ ...newSchool, name: e.target.value })
+              }
+              className="px-3 py-2 border border-gray-700 rounded bg-gray-800 text-white placeholder-gray-400"
+            />
 
-              <input
-                list="provinces"
-                placeholder="Select Province"
-                value={newSchool.province}
-                onChange={(e) =>
-                  setNewSchool({ ...newSchool, province: e.target.value, district: "" })
-                }
-                className="px-3 py-2 border rounded"
-              />
-              <datalist id="provinces">
-                {Object.keys(provinces).map((prov, idx) => (
-                  <option key={idx} value={prov} />
+            <input
+              list="provinces"
+              placeholder="Select Province"
+              value={newSchool.province}
+              onChange={(e) =>
+                setNewSchool({ ...newSchool, province: e.target.value, district: "" })
+              }
+              className="px-3 py-2 border border-gray-700 rounded bg-gray-800 text-white placeholder-gray-400"
+            />
+            <datalist id="provinces">
+              {Object.keys(provinces).map((prov, idx) => (
+                <option key={idx} value={prov} />
+              ))}
+            </datalist>
+
+            <input
+              list="districts"
+              placeholder="Select District"
+              value={newSchool.district}
+              onChange={(e) =>
+                setNewSchool({ ...newSchool, district: e.target.value })
+              }
+              className="px-3 py-2 border border-gray-700 rounded bg-gray-800 text-white placeholder-gray-400"
+            />
+            <datalist id="districts">
+              {newSchool.province &&
+                provinces[newSchool.province as keyof typeof provinces]?.map((dist: string, idx: number) => (
+                  <option key={idx} value={dist} />
                 ))}
-              </datalist>
+            </datalist>
+          </div>
 
-              <input
-                list="districts"
-                placeholder="Select District"
-                value={newSchool.district}
-                onChange={(e) =>
-                  setNewSchool({ ...newSchool, district: e.target.value })
-                }
-                className="px-3 py-2 border rounded"
-              />
-              <datalist id="districts">
-                {newSchool.province &&
-                  provinces[newSchool.province as keyof typeof provinces]?.map((dist: string, idx: number) => (
-                    <option key={idx} value={dist} />
-                  ))}
-              </datalist>
-            </div>
-
-            <div className="flex justify-end gap-2 mt-4">
-              <button
-                onClick={() => setShowModal(false)}
-                className="px-4 py-2 bg-red-400 text-white rounded hover:bg-gray-500"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleAddSchool}
-                className="px-4 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-700"
-              >
-                Save
-              </button>
-            </div>
+          <div className="flex justify-end gap-2 mt-4">
+            <button
+              onClick={() => setShowModal(false)}
+              className="px-4 py-2 bg-red-400 text-white rounded hover:bg-gray-500"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleAddSchool}
+              className="px-4 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-700"
+            >
+              Save
+            </button>
           </div>
         </div>
+      </div>
+
       )}
     </div>
   );

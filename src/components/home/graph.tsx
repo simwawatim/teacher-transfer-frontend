@@ -26,21 +26,24 @@ const HomeGraph = () => {
   ];
 
   return (
-    <div className="w-full h-96 p-6 bg-white dark:bg-gray-900 rounded-lg shadow-md">
-      <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+    <div className="w-full h-[20rem] p-6 bg-gray-900 rounded-lg shadow-md">
+      <h2 className="text-xl font-bold text-white mb-4">
         Teacher Transfers by Month
       </h2>
 
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="month" />
-          <YAxis />
-          <Tooltip />
-          <Legend />
-          <Bar dataKey="Pending" fill="#fbbf24" />
-          <Bar dataKey="Approved" fill="#22c55e" />
-          <Bar dataKey="Rejected" fill="#ef4444" />
+          <CartesianGrid strokeDasharray="3 3" stroke="#444" />
+          <XAxis dataKey="month" stroke="#fff" />
+          <YAxis stroke="#fff" />
+          <Tooltip
+            contentStyle={{ backgroundColor: "#1f2937", color: "#fff" }}
+          />
+          <Legend wrapperStyle={{ color: "#fff" }} />
+          <Bar dataKey="Pending" fill="#d4aa1e" />    {/* darker yellow/gold */}
+<Bar dataKey="Approved" fill="#16a34a" />   {/* darker green */}
+<Bar dataKey="Rejected" fill="#b91c1c" />   {/* darker red */}
+
         </BarChart>
       </ResponsiveContainer>
     </div>

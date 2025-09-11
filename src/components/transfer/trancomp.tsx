@@ -138,16 +138,13 @@ const TransferTable = () => {
       </div>
 
       {/* Table */}
-      <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+      <table className="w-full text-sm text-left text-gray-500bg-gray-900 dark:text-gray-400">
         <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
           <tr>
             <th className="px-6 py-3">Name</th>
             <th className="px-6 py-3">NRC No.</th>
             <th className="px-6 py-3">Current School</th>
             <th className="px-6 py-3">New School</th>
-            <th className="px-6 py-3">Position</th>
-            <th className="px-6 py-3">Subject</th>
-            <th className="px-6 py-3">Experience</th>
             <th className="px-6 py-3">Status</th>
             <th className="px-6 py-3">Date</th>
             <th className="px-6 py-3">Reason</th>
@@ -165,9 +162,6 @@ const TransferTable = () => {
                 <td className="px-6 py-4">{teacher.nrc}</td>
                 <td className="px-6 py-4">{teacher.currentSchool}</td>
                 <td className="px-6 py-4">{teacher.newSchool || "-"}</td>
-                <td className="px-6 py-4">{teacher.position}</td>
-                <td className="px-6 py-4">{teacher.subject}</td>
-                <td className="px-6 py-4">{teacher.experience}</td>
                 <td className="px-6 py-4">{teacher.status}</td>
                 <td className="px-6 py-4">{teacher.date || "-"}</td>
                 <td className="px-6 py-4">{teacher.reason || "-"}</td>
@@ -193,79 +187,86 @@ const TransferTable = () => {
 
       {/* Transfer Request Modal */}
       {showRequestModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-20 flex justify-center items-center z-50">
-          <div className="bg-gray-900 rounded-lg shadow-lg p-6 w-full max-w-lg">
-            <h2 className="text-lg font-bold mb-4">Request Transfer</h2>
-            <div className="grid grid-cols-1 gap-4">
-              <input
-                type="text"
-                placeholder="NRC No."
-                value={transferRequest.nrc}
-                onChange={(e) =>
-                  setTransferRequest({ ...transferRequest, nrc: e.target.value })
-                }
-                className="px-3 py-2 border rounded"
-              />
-              <input
-                type="text"
-                placeholder="Current School"
-                value={transferRequest.currentSchool}
-                onChange={(e) =>
-                  setTransferRequest({ ...transferRequest, currentSchool: e.target.value })
-                }
-                className="px-3 py-2 border rounded"
-              />
-              <input
-                type="text"
-                placeholder="New School"
-                value={transferRequest.newSchool}
-                onChange={(e) =>
-                  setTransferRequest({ ...transferRequest, newSchool: e.target.value })
-                }
-                className="px-3 py-2 border rounded"
-              />
-              <textarea
-                placeholder="Reason for Transfer"
-                value={transferRequest.reason}
-                onChange={(e) =>
-                  setTransferRequest({ ...transferRequest, reason: e.target.value })
-                }
-                className="px-3 py-2 border rounded"
-              />
-            </div>
-            <div className="flex justify-end gap-2 mt-4">
-              <button
-                onClick={() => setShowRequestModal(false)}
-                className="px-4 py-2 bg-red-400 text-white rounded hover:bg-gray-500"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleRequestTransfer}
-                className="px-4 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-700"
-              >
-                Submit
-              </button>
+        <div className="fixed inset-0 bg-opacity-20 flex justify-center items-center z-50">
+            <div className="bg-gray-900 rounded-lg shadow-lg p-6 w-full max-w-lg">
+              <h2 className="text-white font-bold mb-4">Request Transfer</h2>
+              <div className="grid grid-cols-1 gap-4">
+                <input
+                  type="text"
+                  placeholder="NRC No."
+                  value={transferRequest.nrc}
+                  onChange={(e) =>
+                    setTransferRequest({ ...transferRequest, nrc: e.target.value })
+                  }
+                  className="px-3 py-2 border border-gray-700 rounded bg-gray-800 text-white placeholder-gray-400"
+                />
+                <input
+                  type="text"
+                  placeholder="Current School"
+                  value={transferRequest.currentSchool}
+                  onChange={(e) =>
+                    setTransferRequest({ ...transferRequest, currentSchool: e.target.value })
+                  }
+                  className="px-3 py-2 border border-gray-700 rounded bg-gray-800 text-white placeholder-gray-400"
+                />
+                <input
+                  type="text"
+                  placeholder="New School"
+                  value={transferRequest.newSchool}
+                  onChange={(e) =>
+                    setTransferRequest({ ...transferRequest, newSchool: e.target.value })
+                  }
+                  className="px-3 py-2 border border-gray-700 rounded bg-gray-800 text-white placeholder-gray-400"
+                />
+                <textarea
+                  placeholder="Reason for Transfer"
+                  value={transferRequest.reason}
+                  onChange={(e) =>
+                    setTransferRequest({ ...transferRequest, reason: e.target.value })
+                  }
+                  className="px-3 py-2 border border-gray-700 rounded bg-gray-800 text-white placeholder-gray-400"
+                />
+              </div>
+              <div className="flex justify-end gap-2 mt-4">
+                <button
+                  onClick={() => setShowRequestModal(false)}
+                  className="px-4 py-2 bg-red-400 text-white rounded hover:bg-gray-500"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleRequestTransfer}
+                  className="px-4 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-700"
+                >
+                  Submit
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+
       )}
 
       {/* Admin Action Modal */}
       {showActionModal && selectedTeacher && (
-        <div className="fixed inset-0 bg-black bg-opacity-20 flex justify-center items-center z-50">
+        <div className="fixed inset-0 bg-opacity-20 flex justify-center items-center z-50">
           <div className="bg-gray-900 rounded-lg shadow-lg p-6 w-full max-w-md">
-            <h2 className="text-lg font-bold mb-4">Action on {selectedTeacher.name}</h2>
+            <h2 className="text-white text-lg font-bold mb-4">
+              Action on {selectedTeacher.name}
+            </h2>
             <div className="grid grid-cols-1 gap-4">
               <select
                 value={actionData.status}
                 onChange={(e) =>
                   setActionData({ ...actionData, status: e.target.value })
                 }
-                className="px-3 py-2 border rounded"
+                className="px-3 py-2 border border-gray-700 rounded bg-gray-800 text-white placeholder-gray-400"
               >
-                <option value="Approved">Approve</option>
-                <option value="Rejected">Reject</option>
+                <option value="Approved" className="text-black">
+                  Approve
+                </option>
+                <option value="Rejected" className="text-black">
+                  Reject
+                </option>
               </select>
               <textarea
                 placeholder="Reason"
@@ -273,7 +274,7 @@ const TransferTable = () => {
                 onChange={(e) =>
                   setActionData({ ...actionData, reason: e.target.value })
                 }
-                className="px-3 py-2 border rounded"
+                className="px-3 py-2 border border-gray-700 rounded bg-gray-800 text-white placeholder-gray-400"
               />
             </div>
             <div className="flex justify-end gap-2 mt-4">
@@ -292,6 +293,7 @@ const TransferTable = () => {
             </div>
           </div>
         </div>
+
       )}
     </div>
   );

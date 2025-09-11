@@ -87,18 +87,23 @@ const TeachersTable = () => {
   // Build autocomplete options for search
   const searchOptions = Array.from(
     new Set(
-      teachers.flatMap((teacher) =>
-        [teacher.name, teacher.nrc, teacher.tsNo, teacher.school, teacher.position, teacher.subject]
-      )
+      teachers.flatMap((teacher) => [
+        teacher.name,
+        teacher.nrc,
+        teacher.tsNo,
+        teacher.school,
+        teacher.position,
+        teacher.subject,
+      ])
     )
   );
 
   return (
-    <div className="relative overflow-x-auto shadow-md sm:rounded-lg p-4">
+    <div className="p-6">
       <div className="flex justify-between items-center mb-4">
         <button
           onClick={() => setShowModal(true)}
-          className="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-blue-700"
+          className="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-700 transition-colors"
         >
           + Add Teacher
         </button>
@@ -120,41 +125,65 @@ const TeachersTable = () => {
       </div>
 
       {/* Table */}
-      <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-        <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
-          <tr>
-            <th className="px-6 py-3">Name</th>
-            <th className="px-6 py-3">NRC No.</th>
-            <th className="px-6 py-3">TS No.</th>
-            <th className="px-6 py-3">Current School</th>
-            <th className="px-6 py-3">Position</th>
-            <th className="px-6 py-3">Subject</th>
-            <th className="px-6 py-3">Experience</th>
-            <th className="px-6 py-3">Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {currentTeachers.map((teacher, index) => (
-            <tr
-              key={index}
-              className="odd:bg-white odd:dark:bg-gray-900 even:bg-gray-50 even:dark:bg-gray-800 border-b dark:border-gray-700 border-gray-200"
-            >
-              <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                {teacher.name}
-              </td>
-              <td className="px-6 py-4">{teacher.nrc}</td>
-              <td className="px-6 py-4">{teacher.tsNo}</td>
-              <td className="px-6 py-4">{teacher.school}</td>
-              <td className="px-6 py-4">{teacher.position}</td>
-              <td className="px-6 py-4">{teacher.subject}</td>
-              <td className="px-6 py-4">{teacher.experience}</td>
-              <td className="px-6 py-4">
-                <Link href={`/teachers/${teacher.nrc.split("/")[0]}`}>View</Link>
-              </td>
+      <div className="overflow-x-auto shadow-lg rounded-lg">
+        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <thead className="bg-gray-100 dark:bg-gray-800">
+            <tr>
+              {[
+                "Name",
+                "NRC No.",
+                "TS No.",
+                "Current School",
+                "Position",
+                "Subject",
+                "Experience",
+                "Action",
+              ].map((header) => (
+                <th
+                  key={header}
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider"
+                >
+                  {header}
+                </th>
+              ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+
+          <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+            {currentTeachers.map((teacher, index) => (
+              <tr
+                key={index}
+                className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+              >
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                  {teacher.name}
+                </td>
+                <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
+                  {teacher.nrc}
+                </td>
+                <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
+                  {teacher.tsNo}
+                </td>
+                <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
+                  {teacher.school}
+                </td>
+                <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
+                  {teacher.position}
+                </td>
+                <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
+                  {teacher.subject}
+                </td>
+                <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
+                  {teacher.experience}
+                </td>
+                <td className="px-6 py-4 text-sm text-indigo-600 hover:text-indigo-900">
+                  <Link href={`/teachers/${teacher.nrc.split("/")[0]}`}>View</Link>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       {/* Pagination */}
       <div className="flex justify-between items-center mt-4">
@@ -181,117 +210,118 @@ const TeachersTable = () => {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-20 flex justify-center items-center z-50">
-          <div className="bg-gray-900 rounded-lg shadow-lg p-6 w-full max-w-lg">
-            <h2 className="text-lg font-bold mb-4">Add New Teacher</h2>
-            <div className="grid grid-cols-2 gap-4">
-              {/* Name */}
-              <input
-                type="text"
-                placeholder="Full Name"
-                value={newTeacher.name}
-                onChange={(e) =>
-                  setNewTeacher({ ...newTeacher, name: e.target.value })
-                }
-                className="px-3 py-2 border rounded"
-              />
-              {/* NRC */}
-              <input
-                type="text"
-                placeholder="NRC No."
-                value={newTeacher.nrc}
-                onChange={(e) =>
-                  setNewTeacher({ ...newTeacher, nrc: e.target.value })
-                }
-                className="px-3 py-2 border rounded"
-              />
-              {/* TS No */}
-              <input
-                type="text"
-                placeholder="TS No."
-                value={newTeacher.tsNo}
-                onChange={(e) =>
-                  setNewTeacher({ ...newTeacher, tsNo: e.target.value })
-                }
-                className="px-3 py-2 border rounded"
-              />
-              {/* School (autocomplete) */}
-              <input
-                list="schools"
-                placeholder="Select School"
-                value={newTeacher.school}
-                onChange={(e) =>
-                  setNewTeacher({ ...newTeacher, school: e.target.value })
-                }
-                className="px-3 py-2 border rounded"
-              />
-              <datalist id="schools">
-                <option value="Kyawama Secondary" />
-                <option value="Mwinilunga High" />
-                <option value="Solwezi High" />
-                <option value="Kasama Girls" />
-                <option value="Chingola Secondary" />
-              </datalist>
-              {/* Position (autocomplete) */}
-              <input
-                list="positions"
-                placeholder="Select Position"
-                value={newTeacher.position}
-                onChange={(e) =>
-                  setNewTeacher({ ...newTeacher, position: e.target.value })
-                }
-                className="px-3 py-2 border rounded"
-              />
-              <datalist id="positions">
-                <option value="Head Teacher" />
-                <option value="Deputy Teacher" />
-                <option value="Senior Teacher" />
-                <option value="Subject Teacher" />
-              </datalist>
-              {/* Subject (autocomplete) */}
-              <input
-                list="subjects"
-                placeholder="Select Subject"
-                value={newTeacher.subject}
-                onChange={(e) =>
-                  setNewTeacher({ ...newTeacher, subject: e.target.value })
-                }
-                className="px-3 py-2 border rounded"
-              />
-              <datalist id="subjects">
-                <option value="Mathematics" />
-                <option value="English" />
-                <option value="Science" />
-                <option value="Biology" />
-                <option value="Geography" />
-              </datalist>
-              {/* Experience */}
-              <input
-                type="text"
-                placeholder="Experience (e.g. 5 yrs)"
-                value={newTeacher.experience}
-                onChange={(e) =>
-                  setNewTeacher({ ...newTeacher, experience: e.target.value })
-                }
-                className="px-3 py-2 border rounded"
-              />
-            </div>
-            <div className="flex justify-end gap-2 mt-4">
-              <button
-                onClick={() => setShowModal(false)}
-                className="px-4 py-2 bg-red-400 text-white rounded hover:bg-gray-500"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleAddTeacher}
-                className="px-4 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-700"
-              >
-                Save
-              </button>
-            </div>
+      <div className="fixed inset-0 bg-opacity-20 flex justify-center items-center z-50">
+        <div className="bg-gray-900 rounded-lg shadow-lg p-6 w-full max-w-lg">
+          <h2 className="text-lg font-bold mb-4 text-white">Add New Teacher</h2>
+          <div className="grid grid-cols-2 gap-4">
+            {/* Name */}
+            <input
+              type="text"
+              placeholder="Full Name"
+              value={newTeacher.name}
+              onChange={(e) =>
+                setNewTeacher({ ...newTeacher, name: e.target.value })
+              }
+              className="px-3 py-2 border border-gray-700 rounded bg-gray-800 text-white placeholder-gray-400"
+            />
+            {/* NRC */}
+            <input
+              type="text"
+              placeholder="NRC No."
+              value={newTeacher.nrc}
+              onChange={(e) =>
+                setNewTeacher({ ...newTeacher, nrc: e.target.value })
+              }
+              className="px-3 py-2 border border-gray-700 rounded bg-gray-800 text-white placeholder-gray-400"
+            />
+            {/* TS No */}
+            <input
+              type="text"
+              placeholder="TS No."
+              value={newTeacher.tsNo}
+              onChange={(e) =>
+                setNewTeacher({ ...newTeacher, tsNo: e.target.value })
+              }
+              className="px-3 py-2 border border-gray-700 rounded bg-gray-800 text-white placeholder-gray-400"
+            />
+            {/* School */}
+            <input
+              list="schools"
+              placeholder="Select School"
+              value={newTeacher.school}
+              onChange={(e) =>
+                setNewTeacher({ ...newTeacher, school: e.target.value })
+              }
+              className="px-3 py-2 border border-gray-700 rounded bg-gray-800 text-white placeholder-gray-400"
+            />
+            <datalist id="schools">
+              <option value="Kyawama Secondary" />
+              <option value="Mwinilunga High" />
+              <option value="Solwezi High" />
+              <option value="Kasama Girls" />
+              <option value="Chingola Secondary" />
+            </datalist>
+            {/* Position */}
+            <input
+              list="positions"
+              placeholder="Select Position"
+              value={newTeacher.position}
+              onChange={(e) =>
+                setNewTeacher({ ...newTeacher, position: e.target.value })
+              }
+              className="px-3 py-2 border border-gray-700 rounded bg-gray-800 text-white placeholder-gray-400"
+            />
+            <datalist id="positions">
+              <option value="Head Teacher" />
+              <option value="Deputy Teacher" />
+              <option value="Senior Teacher" />
+              <option value="Subject Teacher" />
+            </datalist>
+            {/* Subject */}
+            <input
+              list="subjects"
+              placeholder="Select Subject"
+              value={newTeacher.subject}
+              onChange={(e) =>
+                setNewTeacher({ ...newTeacher, subject: e.target.value })
+              }
+              className="px-3 py-2 border border-gray-700 rounded bg-gray-800 text-white placeholder-gray-400"
+            />
+            <datalist id="subjects">
+              <option value="Mathematics" />
+              <option value="English" />
+              <option value="Science" />
+              <option value="Biology" />
+              <option value="Geography" />
+            </datalist>
+            {/* Experience */}
+            <input
+              type="text"
+              placeholder="Experience (e.g. 5 yrs)"
+              value={newTeacher.experience}
+              onChange={(e) =>
+                setNewTeacher({ ...newTeacher, experience: e.target.value })
+              }
+              className="px-3 py-2 border border-gray-700 rounded bg-gray-800 text-white placeholder-gray-400"
+            />
+          </div>
+          <div className="flex justify-end gap-2 mt-4">
+            <button
+              onClick={() => setShowModal(false)}
+              className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-700 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleAddTeacher}
+              className="px-4 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-700 transition-colors"
+            >
+              Save
+            </button>
           </div>
         </div>
+      </div>
+
       )}
     </div>
   );

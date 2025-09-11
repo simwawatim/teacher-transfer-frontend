@@ -12,7 +12,7 @@ const TeachersPage = () => {
             {/* Main content area: sidebar + content */}
             <div className="flex flex-1 overflow-hidden">
                 {/* Sidebar */}
-                <aside className="w-64 border-r  overflow-y-auto">
+                <aside className="w-64 6overflow-y-auto">
                     <Sidebar />
                 </aside>
 

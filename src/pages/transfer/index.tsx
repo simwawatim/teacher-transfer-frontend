@@ -6,14 +6,14 @@ const TransferPage = () => {
     return (
         <>
 
-          <div className="flex flex-col h-screen">
+          <div className="flex flex-col h-screen bg-dark">
             {/* Top Header */}
             <HeaderPage />
 
             {/* Main content area: sidebar + content */}
             <div className="flex flex-1 overflow-hidden">
                 {/* Sidebar */}
-                <aside className="w-64 border-r  overflow-y-auto">
+                <aside className="w-64 overflow-y-auto">
                     <Sidebar />
                 </aside>
 

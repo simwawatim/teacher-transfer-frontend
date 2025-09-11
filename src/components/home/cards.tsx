@@ -22,23 +22,21 @@ const HomeCards = () => {
       {cards.map((card, index) => (
         <div
           key={index}
-          className="p-6 bg-gray-900  border border-gray-200 rounded-lg shadow-sm 
-                     dark:bg-gray-900 dark:border-gray-700"
+          className="p-6 bg-gray-900 border border-gray-200 rounded-lg shadow-sm"
         >
           <a href={card.link}>
-            <h5 className="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
+            <h5 className="mb-2 text-2xl font-bold tracking-tight text-white">
               {card.title}
             </h5>
           </a>
-          <p className="mb-3 font-normal text-gray-700 dark:text-gray-400">
+          <p className="mb-3 font-normal text-white">
             {card.description}
           </p>
           <a
             href={card.link}
             className="inline-flex items-center px-3 py-2 text-sm font-medium text-center 
-                       text-white bg-indigo-500 rounded-lg hover:bg-indigo-500
-                       focus:ring-4 focus:outline-none focus:bg-indigo-500
-                       dark:bg-indigo-500 dark:hover:bg-indigo-500 dark:focus:ring-blue-800"
+                       text-white bg-indigo-500 rounded-lg hover:bg-indigo-600
+                       focus:ring-4 focus:outline-none focus:ring-indigo-300"
           >
             Open
             <svg

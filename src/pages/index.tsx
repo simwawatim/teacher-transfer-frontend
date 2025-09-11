@@ -27,12 +27,12 @@ const LoginPage = () => {
       <div className="w-full md:w-1/3 flex flex-col justify-center px-6 py-12 bg-gray-900">
         <div className="sm:mx-auto sm:w-full sm:max-w-sm">
           <h2 className="mt-8 text-center text-2xl font-bold tracking-tight text-white sm:text-3xl">
-  Welcome to the Teacher Transfer System
-</h2>
+            Welcome to the Teacher Transfer System
+          </h2>
 
-<h5 className="mt-4 text-center text-lg font-medium text-gray-200 sm:text-xl">
-  Sign in to your account
-</h5>
+          <h5 className="mt-4 text-center text-lg font-medium text-gray-200 sm:text-xl">
+            Sign in to your account
+          </h5>
 
         </div>
 
