@@ -3,17 +3,17 @@ const HomeCards = () => {
     {
       title: "Teachers",
       description: "Manage teacher information, assignments, and profiles.",
-      link: "#",
+      link: "/teachers",
     },
     {
       title: "Schools",
       description: "View and manage school details, staff, and capacity.",
-      link: "#",
+      link: "/schools",
     },
     {
       title: "Pending Transfers",
       description: "Track and approve pending teacher transfer requests.",
-      link: "#",
+      link: "/transfer",
     },
   ];
 
@@ -22,7 +22,7 @@ const HomeCards = () => {
       {cards.map((card, index) => (
         <div
           key={index}
-          className="p-6 bg-gray-900 border border-gray-200 rounded-lg shadow-sm"
+          className="p-6 bg-gray-900 rounded-lg shadow-sm"
         >
           <a href={card.link}>
             <h5 className="mb-2 text-2xl font-bold tracking-tight text-white">

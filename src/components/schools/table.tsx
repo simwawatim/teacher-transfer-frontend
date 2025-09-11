@@ -118,7 +118,7 @@ const SchoolsTable = () => {
       </div>
 
       {showModal && (
-      <div className="fixed inset-0 bg-black bg-opacity-20 flex justify-center items-center z-50">
+      <div className="fixed inset-0 bg-opacity-20 flex justify-center items-center z-50">
         <div className="bg-gray-900 rounded-lg shadow-lg p-6 w-full max-w-md">
           <h2 className="text-lg font-bold mb-4 text-white">Add New School</h2>
           <div className="grid grid-cols-1 gap-4">
