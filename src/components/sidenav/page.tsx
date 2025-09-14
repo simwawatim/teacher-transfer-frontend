@@ -1,6 +1,14 @@
 import { FaTachometerAlt, FaChalkboardTeacher, FaExchangeAlt, FaSchool, FaUser, FaSignOutAlt } from "react-icons/fa";
+import { useRouter } from "next/router";
 
 const Sidebar = () => {
+    const router = useRouter();
+
+    const handleLogout = () => {
+        localStorage.removeItem("token");
+        router.push("/");
+    };
+
     return (
         <>
             <nav className="bg-gray-900 h-screen fixed top-0 left-0 min-w-[250px] py-6 px-4">
@@ -13,7 +21,6 @@ const Sidebar = () => {
                         />
                     </a>
                     <div className="absolute -right-6 top-1 h-6 w-6 p-[6px] cursor-pointer bg-[#007bff] flex items-center justify-center rounded-full">
-                        {/* Collapse button can be added here */}
                     </div>
                 </div>
 
@@ -65,13 +72,13 @@ const Sidebar = () => {
                             </a>
                         </li>
                         <li>
-                            <a
-                                href="/"
-                                className="text-white font-medium hover:text-white hover:bg-indigo-500 text-[15px] flex items-center gap-3 rounded px-4 py-2 transition-all"
+                            <button
+                                onClick={handleLogout}
+                                className="w-full text-left text-white font-medium hover:text-white hover:bg-indigo-500 text-[15px] flex items-center gap-3 rounded px-4 py-2 transition-all"
                             >
                                 <FaSignOutAlt />
                                 <span>Logout</span>
-                            </a>
+                            </button>
                         </li>
                     </ul>
                 </div>
@@ -81,4 +88,3 @@ const Sidebar = () => {
 }
 
 export default Sidebar;
-
