@@ -214,7 +214,7 @@ const TeachersTable = () => {
             <div className="bg-gray-900 rounded-lg shadow-lg p-6 w-full max-w-4xl"> {/* Slightly wider */}
               <h2 className="text-lg font-bold mb-4 text-white">Add New Teacher</h2>
 
-              {/* Username + Password */}
+      
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <input
                   type="text"
@@ -236,7 +236,7 @@ const TeachersTable = () => {
                 />
               </div>
 
-              {/* TeacherData */}
+          
               <div className="grid grid-cols-3 gap-4">
                 {Object.keys(newTeacher.teacherData).map((field) => (
                   <input
@@ -258,7 +258,6 @@ const TeachersTable = () => {
                 ))}
               </div>
 
-              {/* Actions */}
               <div className="flex justify-end gap-2 mt-4">
                 <button
                   onClick={() => setIsModalOpen(false)}

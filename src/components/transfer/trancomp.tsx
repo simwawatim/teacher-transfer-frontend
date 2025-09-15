@@ -17,20 +17,17 @@ const TransferTable = () => {
   const [actionData, setActionData] = useState<ActionData>({ status: "Approved", reason: "" });
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Modal submission loading & errors
   const [submittingAction, setSubmittingAction] = useState(false);
   const [submittingRequest, setSubmittingRequest] = useState(false);
   const [requestError, setRequestError] = useState("");
   const [actionError, setActionError] = useState("");
 
-  // Transfer Request Modal state
   const [transferRequest, setTransferRequest] = useState({
     teacherId: 0,
     toSchoolId: 0,
     reason: "",
   });
 
-  // Fetch transfers
   useEffect(() => {
     const fetchTransfers = async () => {
       try {
@@ -45,7 +42,6 @@ const TransferTable = () => {
     fetchTransfers();
   }, []);
 
-  // Open action modal
   const openActionModal = (teacher: TransferResponse) => {
     setSelectedTeacher(teacher);
     setActionData({ status: teacher.status || "Pending", reason: "" });
@@ -53,7 +49,6 @@ const TransferTable = () => {
     setShowActionModal(true);
   };
 
-  // Handle admin action submit
   const handleActionSubmit = async () => {
     if (!selectedTeacher) return;
     setSubmittingAction(true);
@@ -74,7 +69,6 @@ const TransferTable = () => {
     }
   };
 
-  // Handle transfer request submit
   const handleRequestTransfer = async () => {
     if (!transferRequest.teacherId || !transferRequest.toSchoolId) {
       setRequestError("Please select a teacher and enter a new school ID");
@@ -96,7 +90,7 @@ const TransferTable = () => {
     }
   };
 
-  // Filtered teachers
+
   const filteredTeachers = teachers.filter((t) =>
     [t.teacher.firstName, t.teacher.lastName, t.teacher.nrc, t.teacher.currentSchoolName]
       .join(" ")
@@ -109,7 +103,6 @@ const TransferTable = () => {
 
   return (
     <div className="relative overflow-x-auto shadow-md sm:rounded-lg p-4">
-      {/* Top Controls */}
       <div className="flex justify-between items-center mb-4">
         <input
           type="text"
@@ -126,7 +119,7 @@ const TransferTable = () => {
         </button>
       </div>
 
-      {/* Table */}
+
       <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
         <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
           <tr>
@@ -167,7 +160,7 @@ const TransferTable = () => {
                 </td>
                 <td className="px-6 py-4">{new Date(t.createdAt).toLocaleDateString()}</td>
                 <td className="px-6 py-4 text-sm text-indigo-600 hover:text-indigo-900">
-                  <Link href={`/teachers/${t.id}`}>View</Link>
+                  <Link href={`/transfer-view/${t.id}`}>View</Link>
                 </td>
 
               </tr>
@@ -182,7 +175,6 @@ const TransferTable = () => {
         </tbody>
       </table>
 
-      {/* Transfer Request Modal */}
       {showRequestModal && (
         <div className="fixed inset-0 bg-opacity-20 flex justify-center items-center z-50">
           <div className="bg-gray-900 rounded-lg shadow-lg p-6 w-full max-w-lg">

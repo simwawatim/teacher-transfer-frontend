@@ -59,3 +59,47 @@ export const submitTransfer = async (teacherId: number, toSchoolId: number) => {
   if (!res.ok) throw new Error("Failed to submit transfer");
   return await res.json();
 };
+
+
+export const fetchTransferById = async (id: string) => {
+  try {
+    const res = await fetch(`http://localhost:4000/api/transfers/${id}`);
+    if (!res.ok) throw new Error("Failed to fetch transfer data");
+
+    const data = await res.json();
+    return data;
+  } catch (err) {
+    console.error("Error fetching transfer:", err);
+    throw err;
+  }
+};
+
+export const updateTransferStatus = async (
+  id: number,
+  status: "approved" | "rejected",
+  reason?: string
+) => {
+  try {
+    const url = `http://localhost:4000/api/transfers/${id}/status`;
+
+    const res = await fetch(url, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status, reason }),
+    });
+
+    if (!res.ok) {
+      let errorMessage = "Failed to update transfer status";
+      try {
+        const errorData = await res.json();
+        errorMessage = errorData.message || errorMessage;
+      } catch {}
+      throw new Error(errorMessage);
+    }
+
+    return await res.json();
+  } catch (err: any) {
+    throw new Error(err.message || "An unexpected error occurred");
+  }
+};
+
