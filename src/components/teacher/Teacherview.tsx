@@ -1,18 +1,18 @@
+// components/teacher/Teacherview.tsx
 import { useState, useEffect } from "react";
-import { useRouter } from "next/router";
 import { getTeacherById, Teacher } from "../../api/teachers/teachers";
 
-export default function Teacherview() {
-  const router = useRouter();
-  const { id } = router.query;
+interface TeacherviewProps {
+  teacherId: string; // pass this from parent
+}
 
+export default function Teacherview({ teacherId }: TeacherviewProps) {
   const [teacher, setTeacher] = useState<Teacher | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const teacherId = id ? (id as string) : "3"; // default ID
-    console.log("Fetching teacher with ID:", teacherId);
+    if (!teacherId) return;
 
     const fetchTeacher = async () => {
       setLoading(true);
@@ -22,16 +22,17 @@ export default function Teacherview() {
         const data = await getTeacherById(teacherId);
 
         if (!data) {
-          console.error("Teacher not found for ID:", teacherId);
           setError(`Teacher ID ${teacherId} not found.`);
         } else {
           setTeacher({
             ...data,
-            experience: JSON.parse(data.experience as unknown as string), // parse experience
+            experience: Array.isArray(data.experience)
+              ? data.experience
+              : JSON.parse(data.experience as unknown as string),
           });
         }
       } catch (err) {
-        console.error("Error fetching teacher with ID:", teacherId, err);
+        console.error("Error fetching teacher:", err);
         setError("Failed to load teacher data.");
       } finally {
         setLoading(false);
@@ -39,8 +40,9 @@ export default function Teacherview() {
     };
 
     fetchTeacher();
-  }, [id]);
+  }, [teacherId]);
 
+  if (!teacherId) return <div className="text-center py-10">No teacher ID provided</div>;
   if (loading) return <p className="text-center py-10">Loading teacher data...</p>;
   if (error) return <p className="text-center py-10 text-red-500">{error}</p>;
   if (!teacher) return <p className="text-center py-10">Teacher not found.</p>;
@@ -94,7 +96,9 @@ export default function Teacherview() {
 
             {/* Experience */}
             <div className="mt-6">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Experience</h2>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                Experience
+              </h2>
               <ul className="list-disc list-inside text-gray-500 dark:text-gray-400">
                 {Array.isArray(teacher.experience) &&
                   teacher.experience.map((exp: any, index: number) => (
@@ -107,7 +111,9 @@ export default function Teacherview() {
 
             {/* Contact Info */}
             <div className="mt-6 p-6 bg-gray-50 rounded-lg dark:bg-gray-800">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Contact Information</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                Contact Information
+              </h3>
               <div className="space-y-3 text-gray-600 dark:text-gray-400">
                 <p>Email: {teacher.email}</p>
                 <p>Address: {teacher.address}</p>
@@ -117,10 +123,14 @@ export default function Teacherview() {
               </div>
             </div>
 
-            {/* Bio */}
+            {/* Professional Qualifications */}
             <div className="mt-6">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Professional Qualifications</h2>
-              <p className="text-gray-500 dark:text-gray-400">{teacher.professionalQualifications}</p>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                Professional Qualifications
+              </h2>
+              <p className="text-gray-500 dark:text-gray-400">
+                {teacher.professionalQualifications}
+              </p>
             </div>
           </div>
         </div>
