@@ -4,7 +4,7 @@ import {
   getTeachers,
   addTeacher,
   Teacher,
-} from "../../api/teachers/teachers"; // 👈 adjust path
+} from "../../api/teachers/teachers";
 
 const TeachersTable = () => {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
@@ -37,7 +37,6 @@ const TeachersTable = () => {
 
   const itemsPerPage = 10;
 
-  // Fetch teachers
   useEffect(() => {
     const fetchTeachers = async () => {
       try {
@@ -50,7 +49,7 @@ const TeachersTable = () => {
     fetchTeachers();
   }, []);
 
-  // Add teacher
+
   const handleAddTeacher = async () => {
     try {
       const saved = await addTeacher(newTeacher);
@@ -82,8 +81,6 @@ const TeachersTable = () => {
       console.error("Error saving teacher:", err);
     }
   };
-
-  // Filter + pagination
   const filteredTeachers = teachers.filter((teacher) =>
     Object.values(teacher)
       .join(" ")
@@ -112,7 +109,6 @@ const TeachersTable = () => {
 
   return (
     <div className="p-6">
-      {/* Top controls */}
       <div className="flex justify-between items-center mb-4">
         <button
           onClick={() => setIsModalOpen(true)}
@@ -136,7 +132,6 @@ const TeachersTable = () => {
         </datalist>
       </div>
 
-      {/* Table */}
       <div className="overflow-x-auto shadow-lg rounded-lg">
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead className="bg-gray-100 dark:bg-gray-800">
@@ -192,7 +187,6 @@ const TeachersTable = () => {
         </table>
       </div>
 
-      {/* Pagination */}
       <div className="flex justify-between items-center mt-4">
         <span className="text-sm text-gray-600 dark:text-gray-400">
           Page {currentPage} of {totalPages}
