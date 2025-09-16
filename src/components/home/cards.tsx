@@ -1,27 +1,45 @@
+import { useEffect, useState } from "react";
+
+interface Stat {
+  title: string;
+  value: number;
+  description: string;
+  icon: string;
+  link: string;
+}
+
 const HomeStats = () => {
-  const stats = [
-    {
-      title: "Teachers",
-      value: 120, // Example: number of teachers
-      description: "Total active teachers",
-      icon: "👩‍🏫", // optional emoji/icon
-      link: "/teachers",
-    },
-    {
-      title: "Schools",
-      value: 25,
-      description: "Schools in the system",
-      icon: "🏫",
-      link: "/schools",
-    },
-    {
-      title: "Pending Transfers",
-      value: 7,
-      description: "Requests waiting for approval",
-      icon: "📨",
-      link: "/transfer",
-    },
-  ];
+  const [stats, setStats] = useState<Stat[]>([]);
+
+  useEffect(() => {
+    fetch("http://localhost:4000/api/stats")
+      .then((res) => res.json())
+      .then((data) => {
+        setStats([
+          {
+            title: "Teachers",
+            value: data.totals.totalTeachers,
+            description: "Total active teachers",
+            icon: "👩‍🏫",
+            link: "/teachers",
+          },
+          {
+            title: "Schools",
+            value: data.totals.totalSchools,
+            description: "Schools in the system",
+            icon: "🏫",
+            link: "/schools",
+          },
+          {
+            title: "Pending Transfers",
+            value: data.totals.pendingTransfers,
+            description: "Requests waiting for approval",
+            icon: "📨",
+            link: "/transfer",
+          },
+        ]);
+      });
+  }, []);
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">

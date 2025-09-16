@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import {
   BarChart,
   Bar,
@@ -6,35 +7,38 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  CartesianGrid,
+  CartesianGrid
 } from "recharts";
 
 const HomeGraph = () => {
-  const data = [
-    { month: "Jan", Pending: 10, Approved: 25, Rejected: 5 },
-    { month: "Feb", Pending: 15, Approved: 20, Rejected: 7 },
-    { month: "Mar", Pending: 8, Approved: 30, Rejected: 3 },
-    { month: "Apr", Pending: 12, Approved: 28, Rejected: 6 },
-    { month: "May", Pending: 14, Approved: 32, Rejected: 4 },
-    { month: "Jun", Pending: 9, Approved: 22, Rejected: 5 },
-    { month: "Jul", Pending: 18, Approved: 27, Rejected: 8 },
-    { month: "Aug", Pending: 11, Approved: 26, Rejected: 6 },
-    { month: "Sep", Pending: 16, Approved: 34, Rejected: 7 },
-    { month: "Oct", Pending: 13, Approved: 29, Rejected: 5 },
-    { month: "Nov", Pending: 10, Approved: 24, Rejected: 6 },
-    { month: "Dec", Pending: 12, Approved: 31, Rejected: 4 },
-  ];
+  const [data, setData] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetch("http://localhost:4000/api/stats")
+      .then((res) => res.json())
+      .then((data) => {
+        // Normalize all keys to lowercase
+        const normalized = data.transferByMonth.map((month: any) => ({
+          month: month.month.toLowerCase(),
+          pending: (month.Pending || month.pending || 0),
+          approved: (month.Approved || month.approved || 0),
+          rejected: (month.Rejected || month.rejected || 0),
+        }));
+
+        console.log("Data sent to chart:", normalized);
+        setData(normalized);
+      })
+      .catch((err) => {
+        console.error("Failed to fetch stats:", err);
+      });
+  }, []);
 
   const renderLegendIcon = (value: string) => {
     switch (value) {
-      case "Pending":
-        return "🕒"; // clock icon
-      case "Approved":
-        return "✅"; // check mark
-      case "Rejected":
-        return "❌"; // cross mark
-      default:
-        return null;
+      case "pending": return "🕒";
+      case "approved": return "✅";
+      case "rejected": return "❌";
+      default: return null;
     }
   };
 
@@ -52,26 +56,30 @@ const HomeGraph = () => {
     );
   };
 
+  const allZero = data.every(
+    (month) => month.pending === 0 && month.approved === 0 && month.rejected === 0
+  );
+
   return (
     <div className="w-full h-[24rem] p-6 bg-gray-900 rounded-lg shadow-md">
-      <h2 className="text-xl font-bold text-white mb-4">
-        Teacher Transfers by Month
-      </h2>
+      <h2 className="text-xl font-bold text-white mb-4">Teacher Transfers by Month</h2>
 
-      <ResponsiveContainer width="100%" height="80%">
-        <BarChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#444" />
-          <XAxis dataKey="month" stroke="#fff" />
-          <YAxis stroke="#fff" />
-          <Tooltip
-            contentStyle={{ backgroundColor: "#1f2937", color: "#fff" }}
-          />
-          <Legend content={renderCustomLegend} />
-          <Bar dataKey="Pending" fill="#d4aa1e" />
-          <Bar dataKey="Approved" fill="#16a34a" />
-          <Bar dataKey="Rejected" fill="#b91c1c" />
-        </BarChart>
-      </ResponsiveContainer>
+      {allZero ? (
+        <p className="text-white text-center mt-20">No transfers data to display</p>
+      ) : (
+        <ResponsiveContainer width="100%" height="80%">
+          <BarChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#444" />
+            <XAxis dataKey="month" stroke="#fff" />
+            <YAxis stroke="#fff" />
+            <Tooltip contentStyle={{ backgroundColor: "#1f2937", color: "#fff" }} />
+            <Legend content={renderCustomLegend} />
+            <Bar dataKey="pending" fill="#d4aa1e" />
+            <Bar dataKey="approved" fill="#16a34a" />
+            <Bar dataKey="rejected" fill="#b91c1c" />
+          </BarChart>
+        </ResponsiveContainer>
+      )}
     </div>
   );
 };

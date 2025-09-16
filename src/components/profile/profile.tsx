@@ -1,214 +1,180 @@
-import { useState } from "react";
-
-// ✅ Step 1: Extend Teacher type with image field
-type Teacher = {
-  name: string;
-  nrc: string;
-  tsNo: string;
-  school: string;
-  position: string;
-  subject: string;
-  experience: string;
-  email: string;
-  phone: string;
-  bio: string;
-  education: string;
-  rating: number;
-  reviews: number;
-  image: string; // profile picture path/URL
-};
+import { useState, useEffect } from "react";
+import Swal from "sweetalert2";
+import { getTeacher, updateTeacher, getProfilePictureUrl, Teacher } from "../../api/teachers/teachers";
 
 export default function ProfileComp() {
-  const [teacher, setTeacher] = useState<Teacher>({
-    name: "John Mwansa",
-    nrc: "123456111",
-    tsNo: "TS00123",
-    school: "Kyawama Secondary",
-    position: "Subject Teacher",
-    subject: "Mathematics",
-    experience: "5 yrs",
-    email: "john.mwansa@kyawama.edu",
-    phone: "+260 123 456 789",
-    bio: "Dedicated mathematics teacher with 5 years of experience in secondary education. Specialized in algebra and calculus. Committed to student success and innovative teaching methods.",
-    education: "Bachelor of Education, University of Zambia",
-    rating: 4.8,
-    reviews: 42,
-    image: "../blank-male.jpg", // default picture
-  });
-
+  const [teacher, setTeacher] = useState<Teacher | null>(null);
+  const [formData, setFormData] = useState<Partial<Pick<Teacher, "email" | "address" | "maritalStatus">>>({});
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState<Teacher>(teacher);
+  const [loading, setLoading] = useState(false);
 
-  // ✅ Step 2: Handle text/number field changes
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
+  useEffect(() => {
+    getTeacher(4)
+      .then((data) => {
+        setTeacher(data);
+        setFormData({
+          email: data.email,
+          address: data.address,
+          maritalStatus: data.maritalStatus,
+        });
+      })
+      .catch((err) => {
+        console.error("Failed to fetch teacher:", err);
+        Swal.fire("Error", "Failed to load teacher profile", "error");
+      });
+  }, []);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-
-    setFormData((prev) => ({
-      ...prev,
-      [name]: name === "rating" || name === "reviews" ? Number(value) : value,
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // ✅ Step 3: Handle profile picture upload
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const imageUrl = URL.createObjectURL(file);
-      setFormData((prev) => ({ ...prev, image: imageUrl }));
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files?.[0]) setSelectedFile(e.target.files[0]);
+  };
+
+  const handleSave = async () => {
+    if (!teacher || teacher.id === undefined) return;
+    try {
+      setLoading(true);
+
+      const form = new FormData();
+      form.append("email", formData.email || "");
+      form.append("address", formData.address || "");
+      form.append("maritalStatus", formData.maritalStatus || "");
+      if (selectedFile) form.append("profilePicture", selectedFile);
+
+      const updated = await updateTeacher(teacher.id, form);
+      setTeacher(updated);
+      setFormData({
+        email: updated.email,
+        address: updated.address,
+        maritalStatus: updated.maritalStatus,
+      });
+      setSelectedFile(null);
+      setIsEditing(false);
+      Swal.fire("Success", "Profile updated successfully", "success");
+    } catch (err: any) {
+      console.error("Update failed:", err);
+      Swal.fire("Error", err.message || "Something went wrong", "error");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleSave = () => {
-    setTeacher(formData);
-    setIsEditing(false);
-  };
+  if (!teacher) return <p className="text-center py-10">Loading teacher profile...</p>;
+
+  const editableFields = [
+    { label: "Email", name: "email", type: "email", value: formData.email || "" },
+    { label: "Address", name: "address", type: "textarea", value: formData.address || "" },
+    { label: "Marital Status", name: "maritalStatus", type: "select", value: formData.maritalStatus || "", options: ["Single", "Married", "Divorced", "Widowed"] },
+  ];
+
+  const readonlyFields = [
+    { label: "NRC", value: teacher.nrc || "-" },
+    { label: "TS No", value: teacher.tsNo || "-" },
+    { label: "Professional Qualifications", value: teacher.professionalQualifications || "-" },
+    { label: "Current School Name", value: teacher.currentSchoolName || "-" },
+    { label: "Current Position", value: teacher.currentPosition || "-" },
+    { label: "Subject Specialization", value: teacher.subjectSpecialization || "-" },
+    { label: "Experience", value: teacher.experience || "-" },
+  ];
 
   return (
-    <section className="py-8 bg-white md:py-16 dark:bg-gray-900 antialiased">
-      <div className="max-w-screen-xl px-4 mx-auto 2xl:px-0">
-        <div className="lg:grid lg:grid-cols-2 lg:gap-8 xl:gap-16">
-          {/* Profile Image */}
-          <div className="shrink-0 max-w-md lg:max-w-lg mx-auto">
+    <section className="py-10 bg-gray-50 dark:bg-gray-900 antialiased">
+      <div className="max-w-6xl mx-auto px-4">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+
+          {/* Profile Image: 4/12 width */}
+          <div className="col-span-1 lg:col-span-4 flex justify-center lg:justify-start">
             <div className="relative">
               <img
-                className="w-full rounded-lg shadow-lg dark:shadow-gray-800"
-                src={isEditing ? formData.image : teacher.image}
-                alt={`${teacher.name}, ${teacher.position}`}
+                className="w-64 h-64 object-cover rounded-full shadow-xl dark:shadow-gray-800"
+                src={getProfilePictureUrl(teacher.profilePicture ?? null)}
+                alt={`${teacher.firstName} ${teacher.lastName}`}
               />
               {isEditing && (
                 <input
                   type="file"
                   accept="image/*"
-                  onChange={handleImageChange}
-                  className="mt-2 block text-sm text-gray-500 dark:text-gray-400"
+                  onChange={handleFileChange}
+                  className="mt-3 block w-full text-sm text-gray-500 dark:text-gray-400"
                 />
               )}
-              <div className="absolute bottom-4 right-4 bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full dark:bg-green-900 dark:text-green-300">
-                Available
-              </div>
             </div>
           </div>
 
-          {/* Info Section */}
-          <div className="mt-6 sm:mt-8 lg:mt-0">
-            {isEditing ? (
-              <>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  className="text-2xl font-bold w-full mb-2 px-2 py-1 border rounded"
-                />
-                <input
-                  type="text"
-                  name="position"
-                  value={formData.position}
-                  onChange={handleChange}
-                  className="text-lg w-full mb-4 px-2 py-1 border rounded"
-                />
-              </>
-            ) : (
-              <>
-                <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl dark:text-white">
-                  {teacher.name}
-                </h1>
-                <p className="text-lg text-primary-700 dark:text-primary-400 mt-1">
-                  {teacher.position}
-                </p>
-              </>
-            )}
+          {/* Info Section: 8/12 width */}
+          <div className="col-span-1 lg:col-span-8">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              {teacher.firstName} {teacher.lastName}
+            </h1>
+            <p className="text-lg text-primary-700 dark:text-primary-400 mt-1">
+              {teacher.currentPosition || "-"}
+            </p>
 
-            {/* Details Grid */}
-            <div className="grid grid-cols-2 gap-4 mt-6">
-              {(["nrc", "tsNo", "subject", "education"] as (keyof Teacher)[]).map(
-                (field) => (
-                  <div
-                    key={field}
-                    className="p-4 bg-gray-50 rounded-lg dark:bg-gray-800"
-                  >
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {field.toUpperCase()}
-                    </p>
-                    {isEditing ? (
-                      <input
-                        type="text"
-                        name={field}
-                        value={formData[field] as string}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+              {editableFields.map((field) => (
+                <div key={field.name} className="flex flex-col">
+                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{field.label}</label>
+                  {isEditing ? (
+                    field.type === "textarea" ? (
+                      <textarea
+                        name={field.name}
+                        value={field.value}
                         onChange={handleChange}
-                        className="w-full px-2 py-1 border rounded dark:bg-gray-700 dark:text-white"
+                        className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
-                    ) : (
-                      <p className="text-gray-900 dark:text-white font-medium">
-                        {teacher[field]}
-                      </p>
-                    )}
-                  </div>
-                )
-              )}
-            </div>
-
-            {/* Bio */}
-            <div className="mt-6">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                About
-              </h2>
-              {isEditing ? (
-                <textarea
-                  name="bio"
-                  value={formData.bio}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white"
-                  rows={4}
-                />
-              ) : (
-                <p className="text-gray-500 dark:text-gray-400 mb-6">
-                  {teacher.bio}
-                </p>
-              )}
-            </div>
-
-            {/* Contact Info */}
-            <div className="mt-6 p-6 bg-gray-50 rounded-lg dark:bg-gray-800">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Contact Information
-              </h3>
-              {(["phone", "email", "school"] as (keyof Teacher)[]).map(
-                (field) => (
-                  <div key={field} className="mb-3">
-                    {isEditing ? (
-                      <input
-                        type="text"
-                        name={field}
-                        value={formData[field] as string}
+                    ) : field.type === "select" ? (
+                      <select
+                        name={field.name}
+                        value={field.value}
                         onChange={handleChange}
-                        className="w-full px-2 py-1 border rounded dark:bg-gray-700 dark:text-white"
-                      />
+                        className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        {field.options?.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
                     ) : (
-                      <span className="text-gray-600 dark:text-gray-400">
-                        {teacher[field]}
-                      </span>
-                    )}
-                  </div>
-                )
-              )}
+                      <input
+                        type={field.type}
+                        name={field.name}
+                        value={field.value}
+                        onChange={handleChange}
+                        className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    )
+                  ) : (
+                    <p className="text-gray-900 dark:text-white font-medium">{field.value}</p>
+                  )}
+                </div>
+              ))}
+
+              {readonlyFields.map((field) => (
+                <div key={field.label} className="flex flex-col">
+                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{field.label}</label>
+                  <p className="text-gray-900 dark:text-white font-medium">{field.value}</p>
+                </div>
+              ))}
             </div>
 
             {/* Buttons */}
-            <div className="mt-6 flex gap-4">
+            <div className="mt-6 flex flex-wrap gap-4">
               {isEditing ? (
                 <>
                   <button
                     onClick={handleSave}
-                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                    disabled={loading}
+                    className="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
                   >
-                    Save
+                    {loading ? "Saving..." : "Save"}
                   </button>
                   <button
                     onClick={() => setIsEditing(false)}
-                    className="px-4 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500"
+                    disabled={loading}
+                    className="px-5 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500 disabled:opacity-50"
                   >
                     Cancel
                   </button>
@@ -216,13 +182,14 @@ export default function ProfileComp() {
               ) : (
                 <button
                   onClick={() => setIsEditing(true)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                 >
                   Edit Profile
                 </button>
               )}
             </div>
           </div>
+
         </div>
       </div>
     </section>

@@ -1,59 +1,88 @@
-import { API_BASE_URL } from "../base/base";
-import { ReactNode } from "react";
+import { API_BASE_URL, IMAGE_BASE_URL } from "../base/base";
 
-
-
+// Teacher interface
 export interface Teacher {
-  professionalQualifications: ReactNode;
-  medicalCertificate: ReactNode;
-  maritalStatus: ReactNode;
-  address: ReactNode;
-  phone: ReactNode;
-  email: ReactNode;
-  bio: ReactNode;
-  academicQualifications: ReactNode;
-  lastName: any;
-  firstName: any;
-  subjectSpecialization: any;
-  currentSchoolName: any;
-  currentPosition: any;
   id?: number;
-  name: string;
-  nrc: string;
-  tsNo: string;
-  school: string;
-  position: string;
-  subject: string;
-  experience: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  address: string;
+  phone?: string;
+  maritalStatus?: string;
+  bio?: string;
+  professionalQualifications?: string;
+  academicQualifications?: string;
+  medicalCertificate?: string;
+  subjectSpecialization?: string;
+  currentSchoolName?: string;
+  currentPosition?: string;
+  nrc?: string;
+  tsNo?: string;
+  school?: string;
+  position?: string;
+  subject?: string;
+  experience?: string;
+  profilePicture?: string | null;
+  name?: string; // optional extra
 }
 
+// Fetch all teachers
 export const getTeachers = async (): Promise<Teacher[]> => {
   const res = await fetch(`${API_BASE_URL}/teachers`);
   if (!res.ok) throw new Error("Failed to fetch teachers");
   return res.json();
 };
 
+// Add/register teacher
 export const addTeacher = async (teacher: Teacher): Promise<Teacher> => {
-  const res = await fetch(`http://localhost:4000/api/auth/register`, {
+  const res = await fetch(`${API_BASE_URL}/auth/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(teacher),
   });
-  if (!res.ok) throw new Error("Failed to add teacher");
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.message || "Failed to add teacher");
+  }
   return res.json();
 };
 
-
+// Get a teacher by string ID
 export const getTeacherById = async (id: string): Promise<Teacher> => {
   try {
     const res = await fetch(`${API_BASE_URL}/teachers/${id}`);
-    if (!res.ok) {
-      throw new Error(`Error fetching teacher with ID ${id}: ${res.statusText}`);
-    }
-    const data: Teacher = await res.json();
-    return data;
+    if (!res.ok) throw new Error(`Error fetching teacher with ID ${id}: ${res.statusText}`);
+    return res.json();
   } catch (err) {
     console.error("Error fetching teacher by ID:", err);
     throw err;
   }
+};
+
+// Get a teacher by numeric ID
+export const getTeacher = async (id: number): Promise<Teacher> => {
+  const res = await fetch(`${API_BASE_URL}/teachers/${id}`);
+  if (!res.ok) throw new Error("Failed to fetch teacher");
+  return res.json();
+};
+
+// Update a teacher (with FormData)
+export const updateTeacher = async (id: number, data: FormData): Promise<Teacher> => {
+  const res = await fetch(`${API_BASE_URL}/teachers/${id}`, {
+    method: "PUT",
+    body: data,
+  });
+
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || "Update failed");
+  }
+
+  return res.json();
+};
+
+// Get full profile picture URL
+export const getProfilePictureUrl = (path: string | null) => {
+  if (!path) return "/blank-male.jpg";
+  return `${IMAGE_BASE_URL}${path}`;
 };
