@@ -1,14 +1,24 @@
 import { useState, useEffect } from "react";
 import { getTransfers, submitTransfer, TransferResponse } from "../../api/transfer/transfers";
 import Link from "next/link";
+import Swal from "sweetalert2";
 
 interface ActionData {
   status: string;
   reason: string;
 }
 
+interface School {
+  id: number;
+  name: string;
+  code: string;
+  district: string;
+  province: string;
+}
+
 const TransferTable = () => {
   const [teachers, setTeachers] = useState<TransferResponse[]>([]);
+  const [schools, setSchools] = useState<School[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showRequestModal, setShowRequestModal] = useState(false);
@@ -19,22 +29,27 @@ const TransferTable = () => {
 
   const [submittingAction, setSubmittingAction] = useState(false);
   const [submittingRequest, setSubmittingRequest] = useState(false);
-  const [requestError, setRequestError] = useState("");
-  const [actionError, setActionError] = useState("");
 
   const [transferRequest, setTransferRequest] = useState({
-    teacherId: 0,
+    teacherId: 4,
     toSchoolId: 0,
     reason: "",
   });
 
+  // fetch transfers
   useEffect(() => {
     const fetchTransfers = async () => {
       try {
         const data = await getTransfers();
         setTeachers(data);
       } catch (err: any) {
-        setError(err.message || "Failed to load transfers");
+        let errorMsg = "Failed to load transfers";
+        if (err.response?.data?.message) {
+          errorMsg = err.response.data.message;
+        } else if (err.message) {
+          errorMsg = err.message;
+        }
+        setError(errorMsg);
       } finally {
         setLoading(false);
       }
@@ -42,17 +57,44 @@ const TransferTable = () => {
     fetchTransfers();
   }, []);
 
+  // fetch schools
+  useEffect(() => {
+    const fetchSchools = async () => {
+      try {
+        const res = await fetch("http://localhost:4000/api/schools");
+        if (!res.ok) {
+          const errData = await res.json().catch(() => null);
+          throw new Error(errData?.message || "Failed to fetch schools");
+        }
+        const data = await res.json();
+        setSchools(data);
+      } catch (err: any) {
+        console.error("Failed to fetch schools:", err.message);
+        Swal.fire("Error", err.message || "Failed to fetch schools", "error");
+      }
+    };
+    fetchSchools();
+  }, []);
+
   const openActionModal = (teacher: TransferResponse) => {
     setSelectedTeacher(teacher);
     setActionData({ status: teacher.status || "Pending", reason: "" });
-    setActionError("");
     setShowActionModal(true);
   };
 
   const handleActionSubmit = async () => {
     if (!selectedTeacher) return;
     setSubmittingAction(true);
-    setActionError("");
+
+    Swal.fire({
+      title: "Submitting...",
+      text: "Please wait",
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      },
+    });
+
     try {
       await submitTransfer(selectedTeacher.teacher.id, selectedTeacher.toSchoolId || 0);
       setTeachers((prev) =>
@@ -61,8 +103,15 @@ const TransferTable = () => {
         )
       );
       setShowActionModal(false);
+      Swal.fire("Success", "Transfer action submitted successfully!", "success");
     } catch (err: any) {
-      setActionError(err.message || "Failed to submit action");
+      let errorMsg = "Failed to submit action";
+      if (err.response?.data?.message) {
+        errorMsg = err.response.data.message;
+      } else if (err.message) {
+        errorMsg = err.message;
+      }
+      Swal.fire("Error", errorMsg, "error");
     } finally {
       setSubmittingAction(false);
       setSelectedTeacher(null);
@@ -70,26 +119,41 @@ const TransferTable = () => {
   };
 
   const handleRequestTransfer = async () => {
-    if (!transferRequest.teacherId || !transferRequest.toSchoolId) {
-      setRequestError("Please select a teacher and enter a new school ID");
+    if (!transferRequest.toSchoolId) {
+      Swal.fire("Error", "Please select a new school", "error");
       return;
     }
 
     setSubmittingRequest(true);
-    setRequestError("");
+
+    Swal.fire({
+      title: "Submitting...",
+      text: "Please wait",
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      },
+    });
+
     try {
       await submitTransfer(transferRequest.teacherId, transferRequest.toSchoolId);
       const data = await getTransfers();
       setTeachers(data);
       setShowRequestModal(false);
-      setTransferRequest({ teacherId: 0, toSchoolId: 0, reason: "" });
+      setTransferRequest({ teacherId: 123, toSchoolId: 0, reason: "" }); // reset
+      Swal.fire("Success", "Transfer request submitted successfully!", "success");
     } catch (err: any) {
-      setRequestError(err.message || "Failed to submit transfer request");
+      let errorMsg = "Failed to submit transfer request";
+      if (err.response?.data?.message) {
+        errorMsg = err.response.data.message;
+      } else if (err.message) {
+        errorMsg = err.message;
+      }
+      Swal.fire("Error", errorMsg, "error");
     } finally {
       setSubmittingRequest(false);
     }
   };
-
 
   const filteredTeachers = teachers.filter((t) =>
     [t.teacher.firstName, t.teacher.lastName, t.teacher.nrc, t.teacher.currentSchoolName]
@@ -119,7 +183,7 @@ const TransferTable = () => {
         </button>
       </div>
 
-
+      {/* Table */}
       <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
         <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
           <tr>
@@ -162,7 +226,6 @@ const TransferTable = () => {
                 <td className="px-6 py-4 text-sm text-indigo-600 hover:text-indigo-900">
                   <Link href={`/transfer-view/${t.id}`}>View</Link>
                 </td>
-
               </tr>
             ))
           ) : (
@@ -175,36 +238,30 @@ const TransferTable = () => {
         </tbody>
       </table>
 
+      {/* Request Modal */}
       {showRequestModal && (
         <div className="fixed inset-0 bg-opacity-20 flex justify-center items-center z-50">
           <div className="bg-gray-900 rounded-lg shadow-lg p-6 w-full max-w-lg">
             <h2 className="text-white font-bold mb-4">Request Transfer</h2>
-            {requestError && <p className="text-red-500 mb-2">{requestError}</p>}
             <div className="grid grid-cols-1 gap-4">
-              <select
-                value={transferRequest.teacherId}
-                onChange={(e) =>
-                  setTransferRequest({ ...transferRequest, teacherId: Number(e.target.value) })
-                }
-                className="px-3 py-2 border border-gray-700 rounded bg-gray-800 text-white placeholder-gray-400"
-              >
-                <option value={0}>Select Teacher</option>
-                {teachers.map((t) => (
-                  <option key={t.teacher.id} value={t.teacher.id}>
-                    {t.teacher.firstName} {t.teacher.lastName} ({t.teacher.nrc})
-                  </option>
-                ))}
-              </select>
+              {/* Static teacher */}
+              <p className="text-white">Teacher ID: {transferRequest.teacherId}</p>
 
-              <input
-                type="number"
-                placeholder="New School ID"
-                value={transferRequest.toSchoolId || ""}
+              {/* School dropdown */}
+              <select
+                value={transferRequest.toSchoolId}
                 onChange={(e) =>
                   setTransferRequest({ ...transferRequest, toSchoolId: Number(e.target.value) })
                 }
                 className="px-3 py-2 border border-gray-700 rounded bg-gray-800 text-white placeholder-gray-400"
-              />
+              >
+                <option value={0}>Select School</option>
+                {schools.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name} ({s.code})
+                  </option>
+                ))}
+              </select>
 
               <textarea
                 placeholder="Reason for Transfer"
@@ -235,8 +292,6 @@ const TransferTable = () => {
           </div>
         </div>
       )}
-
-  
     </div>
   );
 };
