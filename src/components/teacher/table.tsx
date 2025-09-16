@@ -1,21 +1,18 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import {
-  getTeachers,
-  addTeacher,
-  Teacher,
-} from "../../api/teachers/teachers";
+import Swal from "sweetalert2";
+import { getTeachers, addTeacher, Teacher } from "../../api/teachers/teachers";
 
 const TeachersTable = () => {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [schools, setSchools] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const [newTeacher, setNewTeacher] = useState<any>({
-    username: "",
-    password: "",
-    role: "teacher", // fixed
+    role: "teacher",
     teacherData: {
       firstName: "",
       lastName: "",
@@ -28,10 +25,9 @@ const TeachersTable = () => {
       academicQualifications: "",
       professionalQualifications: "",
       currentSchoolType: "",
-      currentSchoolName: "",
+      currentSchoolId: "",
       currentPosition: "",
       subjectSpecialization: "",
-      currentSchoolId: "",
     },
   });
 
@@ -42,45 +38,74 @@ const TeachersTable = () => {
       try {
         const data = await getTeachers();
         setTeachers(data);
-      } catch (err) {
+      } catch (err: any) {
         console.error("Error fetching teachers:", err);
+        Swal.fire("Error", "Failed to fetch teachers.", "error");
       }
     };
+
+    const fetchSchools = async () => {
+      try {
+        const response = await fetch("http://localhost:4000/api/schools");
+        if (!response.ok) throw new Error("Failed to fetch schools");
+        const data = await response.json();
+        setSchools(data);
+      } catch (err: any) {
+        console.error("Error fetching schools:", err);
+        Swal.fire("Error", "Failed to fetch schools.", "error");
+      }
+    };
+
     fetchTeachers();
+    fetchSchools();
   }, []);
 
-
   const handleAddTeacher = async () => {
+    setLoading(true);
+
+    Swal.fire({
+      title: "Saving Teacher...",
+      text: "Please wait",
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading(),
+    });
+
     try {
       const saved = await addTeacher(newTeacher);
+
       setTeachers([...teachers, saved]);
       setNewTeacher({
-        username: "",
-        password: "",
         role: "teacher",
-        teacherData: {
-          firstName: "",
-          lastName: "",
-          email: "",
-          nrc: "",
-          tsNo: "",
-          address: "",
-          maritalStatus: "",
-          medicalCertificate: "",
-          academicQualifications: "",
-          professionalQualifications: "",
-          currentSchoolType: "",
-          currentSchoolName: "",
-          currentPosition: "",
-          subjectSpecialization: "",
-          currentSchoolId: "",
-        },
+        teacherData: Object.fromEntries(
+          Object.keys(newTeacher.teacherData).map((key) => [key, ""])
+        ),
       });
+
       setIsModalOpen(false);
-    } catch (err) {
+
+      Swal.fire({
+        icon: "success",
+        title: "Success",
+        text: "Teacher added successfully 🎉",
+      });
+    } catch (err: any) {
       console.error("Error saving teacher:", err);
+
+      let errorMessage =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Something went wrong while saving teacher.";
+
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: errorMessage,
+      });
+    } finally {
+      setLoading(false);
     }
   };
+
   const filteredTeachers = teachers.filter((teacher) =>
     Object.values(teacher)
       .join(" ")
@@ -109,6 +134,7 @@ const TeachersTable = () => {
 
   return (
     <div className="p-6">
+      {/* Header */}
       <div className="flex justify-between items-center mb-4">
         <button
           onClick={() => setIsModalOpen(true)}
@@ -132,6 +158,7 @@ const TeachersTable = () => {
         </datalist>
       </div>
 
+      {/* Table */}
       <div className="overflow-x-auto shadow-lg rounded-lg">
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead className="bg-gray-100 dark:bg-gray-800">
@@ -187,6 +214,7 @@ const TeachersTable = () => {
         </table>
       </div>
 
+      {/* Pagination */}
       <div className="flex justify-between items-center mt-4">
         <span className="text-sm text-gray-600 dark:text-gray-400">
           Page {currentPage} of {totalPages}
@@ -209,73 +237,163 @@ const TeachersTable = () => {
         </div>
       </div>
 
-        {isModalOpen && (
-          <div className="fixed inset-0 bg-opacity-20 flex justify-center items-center z-50">
-            <div className="bg-gray-900 rounded-lg shadow-lg p-6 w-full max-w-4xl"> {/* Slightly wider */}
-              <h2 className="text-lg font-bold mb-4 text-white">Add New Teacher</h2>
+      {/* Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-gray-900 rounded-lg shadow-lg p-6 w-full max-w-4xl overflow-y-auto max-h-[90vh]">
+            <h2 className="text-2xl font-bold mb-6 text-white">Add New Teacher</h2>
 
-      
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <input
-                  type="text"
-                  placeholder="Username"
-                  value={newTeacher.username}
-                  onChange={(e) =>
-                    setNewTeacher({ ...newTeacher, username: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-gray-700 rounded bg-gray-800 text-white placeholder-gray-400"
-                />
-                <input
-                  type="password"
-                  placeholder="Password"
-                  value={newTeacher.password}
-                  onChange={(e) =>
-                    setNewTeacher({ ...newTeacher, password: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-gray-700 rounded bg-gray-800 text-white placeholder-gray-400"
-                />
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* Text Inputs */}
+              {[
+                "firstName",
+                "lastName",
+                "email",
+                "nrc",
+                "tsNo",
+                "address",
+              ].map((field) => {
+                const label =
+                  field.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase());
+                return (
+                  <div key={field} className="flex flex-col">
+                    <label className="mb-1 text-gray-300">{label}</label>
+                    <input
+                      type="text"
+                      placeholder={`Enter ${label}`}
+                      value={newTeacher.teacherData[field]}
+                      onChange={(e) =>
+                        setNewTeacher({
+                          ...newTeacher,
+                          teacherData: { ...newTeacher.teacherData, [field]: e.target.value },
+                        })
+                      }
+                      className="px-3 py-2 border border-gray-700 rounded bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                );
+              })}
 
-          
-              <div className="grid grid-cols-3 gap-4">
-                {Object.keys(newTeacher.teacherData).map((field) => (
-                  <input
-                    key={field}
-                    type="text"
-                    placeholder={field}
+              {/* Dropdowns */}
+              {[
+                { field: "maritalStatus", options: ["Single", "Married", "Divorced", "Widowed"] },
+                {
+                  field: "professionalQualifications",
+                  options: ["Primary Diploma", "Secondary Diploma", "Primary Degree", "Secondary Degree"],
+                },
+                { field: "currentSchoolType", options: ["Community", "Primary", "Secondary"] },
+                {
+                  field: "currentPosition",
+                  options: [
+                    "Class Teacher",
+                    "Subject Teacher",
+                    "Senior Teacher",
+                    "HOD",
+                    "Deputy Head",
+                    "Head Teacher",
+                  ],
+                },
+              ].map(({ field, options }) => (
+                <div key={field} className="flex flex-col">
+                  <label className="mb-1 text-gray-300">
+                    {field.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase())}
+                  </label>
+                  <select
                     value={newTeacher.teacherData[field]}
                     onChange={(e) =>
                       setNewTeacher({
                         ...newTeacher,
-                        teacherData: {
-                          ...newTeacher.teacherData,
-                          [field]: e.target.value,
-                        },
+                        teacherData: { ...newTeacher.teacherData, [field]: e.target.value },
                       })
                     }
-                    className="px-3 py-2 border border-gray-700 rounded bg-gray-800 text-white placeholder-gray-400"
-                  />
-                ))}
+                    className="px-3 py-2 border border-gray-700 rounded bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    <option value="">Select {field.replace(/([A-Z])/g, " $1")}</option>
+                    {options.map((opt) => (
+                      <option key={opt} value={opt}>
+                        {opt}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ))}
+
+              {/* School Dropdown */}
+              <div className="flex flex-col">
+                <label className="mb-1 text-gray-300">Current School</label>
+                <select
+                  value={newTeacher.teacherData.currentSchoolId}
+                  onChange={(e) =>
+                    setNewTeacher({
+                      ...newTeacher,
+                      teacherData: { ...newTeacher.teacherData, currentSchoolId: e.target.value },
+                    })
+                  }
+                  className="px-3 py-2 border border-gray-700 rounded bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="">Select School</option>
+                  {schools.map((school) => (
+                    <option key={school.id} value={school.id}>
+                      {school.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              <div className="flex justify-end gap-2 mt-4">
-                <button
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-700 transition-colors"
+              {/* Subject Dropdown */}
+              <div className="flex flex-col">
+                <label className="mb-1 text-gray-300">Subject Specialization</label>
+                <select
+                  value={newTeacher.teacherData.subjectSpecialization}
+                  onChange={(e) =>
+                    setNewTeacher({
+                      ...newTeacher,
+                      teacherData: { ...newTeacher.teacherData, subjectSpecialization: e.target.value },
+                    })
+                  }
+                  className="px-3 py-2 border border-gray-700 rounded bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleAddTeacher}
-                  className="px-4 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-700 transition-colors"
-                >
-                  Save
-                </button>
+                  <option value="">Select Subject</option>
+                  {[
+                    "Mathematics",
+                    "English",
+                    "Science",
+                    "History",
+                    "Geography",
+                    "Physical Education",
+                    "Biology",
+                    "Chemistry",
+                    "Physics",
+                    "Computer Studies",
+                  ].map((sub) => (
+                    <option key={sub} value={sub}>
+                      {sub}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
-          </div>
-        )}
 
+            {/* Buttons */}
+            <div className="flex justify-end gap-2 mt-6">
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-700 transition-colors"
+                disabled={loading}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddTeacher}
+                disabled={loading}
+                className="px-4 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-700 transition-colors"
+              >
+                {loading ? "Saving..." : "Save"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
