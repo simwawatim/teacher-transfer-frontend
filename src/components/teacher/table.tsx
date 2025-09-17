@@ -21,9 +21,9 @@ const TeachersTable = () => {
       tsNo: "",
       address: "",
       maritalStatus: "",
-      medicalCertificate: "",
-      academicQualifications: "",
-      professionalQualifications: "",
+      medicalCertificate: null,
+      academicQualifications: null,
+      professionalQualifications: null,
       currentSchoolType: "",
       currentSchoolId: "",
       currentPosition: "",
@@ -60,7 +60,22 @@ const TeachersTable = () => {
     fetchSchools();
   }, []);
 
+  // ===== Handle file change =====
+  const handleFileChange = (field: string, file: File | null) => {
+    setNewTeacher({
+      ...newTeacher,
+      teacherData: { ...newTeacher.teacherData, [field]: file },
+    });
+  };
+
+  // ===== Handle add teacher =====
   const handleAddTeacher = async () => {
+    // Validate required fields
+    if (!newTeacher.teacherData.firstName || !newTeacher.teacherData.lastName) {
+      Swal.fire("Error", "First Name and Last Name are required", "error");
+      return;
+    }
+
     setLoading(true);
 
     Swal.fire({
@@ -71,13 +86,40 @@ const TeachersTable = () => {
     });
 
     try {
-      const saved = await addTeacher(newTeacher);
+      const formData = new FormData();
+
+      // Add role
+      formData.append("role", newTeacher.role);
+
+      // Copy teacherData
+      const teacherDataPayload: any = { ...newTeacher.teacherData };
+
+      // Append files and remove from JSON
+      ["medicalCertificate", "academicQualifications", "professionalQualifications"].forEach((field) => {
+        const file = teacherDataPayload[field];
+        if (file instanceof File) {
+          formData.append(field, file, file.name);
+          delete teacherDataPayload[field];
+        }
+      });
+
+      // Append remaining teacherData as JSON
+      formData.append("teacherData", JSON.stringify(teacherDataPayload));
+
+      const saved = await addTeacher(formData);
 
       setTeachers([...teachers, saved]);
+
+      // Reset form
       setNewTeacher({
         role: "teacher",
         teacherData: Object.fromEntries(
-          Object.keys(newTeacher.teacherData).map((key) => [key, ""])
+          Object.keys(newTeacher.teacherData).map((key) => [
+            key,
+            ["medicalCertificate", "academicQualifications", "professionalQualifications"].includes(key)
+              ? null
+              : "",
+          ])
         ),
       });
 
@@ -90,23 +132,16 @@ const TeachersTable = () => {
       });
     } catch (err: any) {
       console.error("Error saving teacher:", err);
-
-      let errorMessage =
-        err?.response?.data?.message ||
-        err?.message ||
-        "Something went wrong while saving teacher.";
-
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: errorMessage,
-      });
+      const errorMessage =
+        err?.response?.data?.message || err?.message || "Something went wrong while saving teacher.";
+      Swal.fire({ icon: "error", title: "Error", text: errorMessage });
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredTeachers = teachers.filter((teacher) =>
+  // ===== Filtering & Pagination =====
+  const filteredTeachers = teachers.filter((teacher: any) =>
     Object.values(teacher)
       .join(" ")
       .toLowerCase()
@@ -163,45 +198,30 @@ const TeachersTable = () => {
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead className="bg-gray-100 dark:bg-gray-800">
             <tr>
-              {[
-                "Name",
-                "NRC No.",
-                "TS No.",
-                "Current School",
-                "Position",
-                "Subject",
-                "Action",
-              ].map((header) => (
-                <th
-                  key={header}
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider"
-                >
-                  {header}
-                </th>
-              ))}
+              {["Name", "NRC No.", "TS No.", "Current School", "Position", "Subject", "Action"].map(
+                (header) => (
+                  <th
+                    key={header}
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider"
+                  >
+                    {header}
+                  </th>
+                )
+              )}
             </tr>
           </thead>
           <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
             {currentTeachers.map((teacher: any, index: number) => (
-              <tr
-                key={index}
-                className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-              >
+              <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                   {teacher.firstName} {teacher.lastName}
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
-                  {teacher.nrc}
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
-                  {teacher.tsNo}
-                </td>
+                <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">{teacher.nrc}</td>
+                <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">{teacher.tsNo}</td>
                 <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
                   {teacher.currentSchoolName}
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
-                  {teacher.currentPosition}
-                </td>
+                <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">{teacher.currentPosition}</td>
                 <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
                   {teacher.subjectSpecialization}
                 </td>
@@ -245,61 +265,34 @@ const TeachersTable = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {/* Text Inputs */}
-              {[
-                "firstName",
-                "lastName",
-                "email",
-                "nrc",
-                "tsNo",
-                "address",
-              ].map((field) => {
-                const label =
-                  field.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase());
-                return (
-                  <div key={field} className="flex flex-col">
-                    <label className="mb-1 text-gray-300">{label}</label>
-                    <input
-                      type="text"
-                      placeholder={`Enter ${label}`}
-                      value={newTeacher.teacherData[field]}
-                      onChange={(e) =>
-                        setNewTeacher({
-                          ...newTeacher,
-                          teacherData: { ...newTeacher.teacherData, [field]: e.target.value },
-                        })
-                      }
-                      className="px-3 py-2 border border-gray-700 rounded bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    />
-                  </div>
-                );
-              })}
+              {["firstName","lastName","email","nrc","tsNo","address"].map((f) => (
+                <div key={f} className="flex flex-col">
+                  <label className="mb-1 text-gray-300">{f.charAt(0).toUpperCase() + f.slice(1)}</label>
+                  <input
+                    type="text"
+                    value={newTeacher.teacherData[f]}
+                    onChange={(e) =>
+                      setNewTeacher({
+                        ...newTeacher,
+                        teacherData: { ...newTeacher.teacherData, [f]: e.target.value },
+                      })
+                    }
+                    className="px-3 py-2 border border-gray-700 rounded bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              ))}
 
               {/* Dropdowns */}
               {[
                 { field: "maritalStatus", options: ["Single", "Married", "Divorced", "Widowed"] },
-                {
-                  field: "professionalQualifications",
-                  options: ["Primary Diploma", "Secondary Diploma", "Primary Degree", "Secondary Degree"],
-                },
+                { field: "professionalQualifications", options: ["Primary Diploma", "Secondary Diploma", "Primary Degree", "Secondary Degree"] },
                 { field: "currentSchoolType", options: ["Community", "Primary", "Secondary"] },
-                {
-                  field: "currentPosition",
-                  options: [
-                    "Class Teacher",
-                    "Subject Teacher",
-                    "Senior Teacher",
-                    "HOD",
-                    "Deputy Head",
-                    "Head Teacher",
-                  ],
-                },
+                { field: "currentPosition", options: ["Class Teacher", "Subject Teacher", "Senior Teacher", "HOD", "Deputy Head", "Head Teacher"] },
               ].map(({ field, options }) => (
                 <div key={field} className="flex flex-col">
-                  <label className="mb-1 text-gray-300">
-                    {field.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase())}
-                  </label>
+                  <label className="mb-1 text-gray-300">{field.replace(/([A-Z])/g, " $1")}</label>
                   <select
-                    value={newTeacher.teacherData[field]}
+                    value={newTeacher.teacherData[field] || ""}
                     onChange={(e) =>
                       setNewTeacher({
                         ...newTeacher,
@@ -310,19 +303,17 @@ const TeachersTable = () => {
                   >
                     <option value="">Select {field.replace(/([A-Z])/g, " $1")}</option>
                     {options.map((opt) => (
-                      <option key={opt} value={opt}>
-                        {opt}
-                      </option>
+                      <option key={opt} value={opt}>{opt}</option>
                     ))}
                   </select>
                 </div>
               ))}
 
-              {/* School Dropdown */}
+              {/* Current School */}
               <div className="flex flex-col">
                 <label className="mb-1 text-gray-300">Current School</label>
                 <select
-                  value={newTeacher.teacherData.currentSchoolId}
+                  value={newTeacher.teacherData.currentSchoolId || ""}
                   onChange={(e) =>
                     setNewTeacher({
                       ...newTeacher,
@@ -333,18 +324,16 @@ const TeachersTable = () => {
                 >
                   <option value="">Select School</option>
                   {schools.map((school) => (
-                    <option key={school.id} value={school.id}>
-                      {school.name}
-                    </option>
+                    <option key={school.id} value={school.id}>{school.name}</option>
                   ))}
                 </select>
               </div>
 
-              {/* Subject Dropdown */}
+              {/* Subject */}
               <div className="flex flex-col">
                 <label className="mb-1 text-gray-300">Subject Specialization</label>
                 <select
-                  value={newTeacher.teacherData.subjectSpecialization}
+                  value={newTeacher.teacherData.subjectSpecialization || ""}
                   onChange={(e) =>
                     setNewTeacher({
                       ...newTeacher,
@@ -355,23 +344,29 @@ const TeachersTable = () => {
                 >
                   <option value="">Select Subject</option>
                   {[
-                    "Mathematics",
-                    "English",
-                    "Science",
-                    "History",
-                    "Geography",
-                    "Physical Education",
-                    "Biology",
-                    "Chemistry",
-                    "Physics",
-                    "Computer Studies",
+                    "Mathematics","English","Science","History","Geography","Physical Education",
+                    "Biology","Chemistry","Physics","Computer Studies",
                   ].map((sub) => (
-                    <option key={sub} value={sub}>
-                      {sub}
-                    </option>
+                    <option key={sub} value={sub}>{sub}</option>
                   ))}
                 </select>
               </div>
+
+              {/* File Inputs */}
+              {[
+                { field: "medicalCertificate", label: "Medical Certificate" },
+                { field: "academicQualifications", label: "Academic Qualifications" },
+                { field: "professionalQualifications", label: "Professional Qualifications" },
+              ].map(({ field, label }) => (
+                <div key={field} className="flex flex-col">
+                  <label className="mb-1 text-gray-300">{label}</label>
+                  <input
+                    type="file"
+                    onChange={(e) => handleFileChange(field, e.target.files?.[0] ?? null)}
+                    className="px-3 py-2 border border-gray-700 rounded bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              ))}
             </div>
 
             {/* Buttons */}

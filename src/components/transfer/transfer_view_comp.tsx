@@ -1,274 +1,274 @@
 "use client";
-import { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import { fetchTransferById, updateTransferStatus } from "../../api/transfer/transfers";
 import Swal from "sweetalert2";
+import { HiAcademicCap, HiLocationMarker, HiOutlineOfficeBuilding } from "react-icons/hi"
+import { fetchTransferById, updateTransferStatus, TransferResponse } from "../../api/transfer/transfers";
+import { IMAGE_BASE_URL } from "../../api/base/base"
 
-interface Experience {
-  school: string;
-  years: number;
-}
-
-interface TransferData {
-  id: number;
-  name: string;
-  nrc: string;
-  tsNo: string;
-  address: string;
-  maritalStatus: string;
-  medicalCertificate: string;
-  academicQualifications: string;
-  professionalQualifications: string;
-  currentSchool: string;
-  schoolName: string;
-  newSchool: string;
-  currentPosition: string;
-  subjectSpecialization: string;
-  transferDate: string;
-  experience: Experience[];
-  transferStatus: string;
-  statusReason: string;
-}
-
-const TransferViewComp = () => {
+const TransferViewLayout: React.FC = () => {
   const router = useRouter();
+  const [transfer, setTransfer] = useState<TransferResponse | null>(null);
+  const [status, setStatus] = useState<"approved" | "rejected">("approved");
+  const [reason, setReason] = useState("");
+
+  // Get id from query parameters
   const { id } = router.query;
 
-  const [transferData, setTransferData] = useState<TransferData | null>(null);
-  const [status, setStatus] = useState("");
-  const [reason, setReason] = useState("");
-  const [loading, setLoading] = useState(true);
-
-  // Fetch transfer data
   useEffect(() => {
-    if (!id) return;
+    if (!id) return; // wait until router is ready
 
-    const getTransfer = async () => {
+    const loadTransfer = async () => {
       try {
         const data = await fetchTransferById(id as string);
-
-        const mappedData: TransferData = {
-          id: data.id,
-          name: `${data.teacher.firstName} ${data.teacher.lastName}`,
-          nrc: data.teacher.nrc,
-          tsNo: data.teacher.tsNo,
-          address: data.teacher.address,
-          maritalStatus: data.teacher.maritalStatus,
-          medicalCertificate: data.teacher.medicalCertificate,
-          academicQualifications: data.teacher.academicQualifications,
-          professionalQualifications: data.teacher.professionalQualifications,
-          currentSchool: data.teacher.currentSchoolType,
-          schoolName: data.teacher.currentSchoolName,
-          newSchool: data.toSchool?.name || "",
-          currentPosition: data.teacher.currentPosition,
-          subjectSpecialization: data.teacher.subjectSpecialization,
-          transferDate: new Date(data.createdAt).toLocaleDateString(),
-          experience: JSON.parse(data.teacher.experience),
-          transferStatus: data.status,
-          statusReason: data.statusReason || "",
-        };
-
-        setTransferData(mappedData);
-        setStatus(mappedData.transferStatus);
-        setReason(mappedData.statusReason);
-        setLoading(false);
+        // Parse experience if needed
+        if (typeof data.teacher.experience === "string") {
+          data.teacher.experience = JSON.parse(data.teacher.experience);
+        }
+        setTransfer(data);
+        setStatus(data.status as "approved" | "rejected"); // initialize status
       } catch (err) {
-        Swal.fire({
-          icon: "error",
-          title: "Error",
-          text: "❌ Failed to fetch transfer data.",
-        });
-        setLoading(false);
+        console.error(err);
+        Swal.fire("Error", "Failed to load transfer data", "error");
       }
     };
 
-    getTransfer();
+    loadTransfer();
   }, [id]);
 
-  // Handle update request
-  const handleUpdate = async () => {
-    if (!id) return;
+  const handleStatusUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!transfer) return;
 
     try {
-      const normalizedStatus = status.toLowerCase();
-      if (!["approved", "rejected"].includes(normalizedStatus)) {
-        Swal.fire({
-          icon: "warning",
-          title: "Invalid Status",
-          text: "❌ Status must be Approved or Rejected.",
-        });
-        return;
-      }
-
-      await updateTransferStatus(Number(id), normalizedStatus as "approved" | "rejected", reason);
-
-      Swal.fire({
-        icon: "success",
-        title: "Success",
-        text: "✅ Status updated successfully!",
-        timer: 2000,
-        showConfirmButton: false,
-      });
-
-      setTransferData((prev) =>
-        prev ? { ...prev, transferStatus: normalizedStatus, statusReason: reason } : prev
-      );
+      await updateTransferStatus(transfer.id, status, reason);
+      Swal.fire("Success", "Transfer status updated", "success");
+      setTransfer({ ...transfer, status }); // update local state
     } catch (err: any) {
-      Swal.fire({
-        icon: "error",
-        title: "Update Failed",
-        text: err.message || "❌ Something went wrong while updating status",
-      });
+      Swal.fire("Error", err.message || "Failed to update status", "error");
     }
   };
 
-  // Confirm update with SweetAlert
-  const confirmUpdate = (e: React.FormEvent) => {
-    e.preventDefault();
+  if (!transfer) return <div className="p-6 text-center">Loading...</div>;
 
-    Swal.fire({
-      title: "Are you sure?",
-      text: `You are about to mark this request as ${status}.`,
-      icon: "question",
-      showCancelButton: true,
-      confirmButtonText: "Yes, update it!",
-      cancelButtonText: "Cancel",
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-        await handleUpdate();
-      }
-    });
-  };
-
-  if (loading) return <p className="text-center mt-10">Loading transfer data...</p>;
-  if (!transferData) return <p className="text-center mt-10 text-red-600">Transfer not found!</p>;
+  const { teacher, fromSchool, toSchool } = transfer;
 
   return (
-    <section className="py-8 bg-white md:py-16 dark:bg-gray-900 antialiased">
-      <div className="max-w-screen-xl px-4 mx-auto 2xl:px-0 space-y-8">
-        {/* Transfer Status */}
-        <div className="p-6 bg-gray-50 rounded-lg dark:bg-gray-800 space-y-2">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Transfer Application Status</h3>
-          <div className="flex items-center gap-2">
-            <span
-              className={`px-3 py-1 text-sm font-medium rounded-full ${
-                transferData.transferStatus.toLowerCase() === "approved"
-                  ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-                  : transferData.transferStatus.toLowerCase() === "rejected"
-                  ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
-                  : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
-              }`}
-            >
-              {transferData.transferStatus}
-            </span>
-          </div>
-          {transferData.statusReason && (
-            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">{transferData.statusReason}</p>
-          )}
-        </div>
+    <section className="py-8 bg-white dark:bg-gray-900 min-h-screen w-full">
+      <div className="max-w-full mx-auto px-4 space-y-6">
+        {/* Profile + Schools */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 w-full">
+          {/* Profile */}
+          <div className="md:col-span-1 p-6 bg-gray-50 dark:bg-gray-800 h-64 flex flex-col items-center justify-between rounded-lg shadow-sm">
+            <div className="flex justify-center mb-2">
+              <img
+                className="w-24 h-24 rounded-full object-cover"
+                src={teacher.profilePicture || "/blank-male.jpg"}
+                alt="Profile"
+              />
+            </div>
+            <h5 className="mb-2 text-lg font-bold text-gray-900 dark:text-white text-center">
+              {teacher.firstName} {teacher.lastName}
+            </h5>
+           <span
+            className={`inline-block px-3 py-1 text-sm font-semibold rounded-full select-none 
+              ${
+                transfer.status === "pending"
+                  ? "bg-blue-200 text-blue-800 dark:bg-blue-700 dark:text-blue-200"
+                  : transfer.status === "approved"
+                  ? "bg-green-200 text-green-800 dark:bg-green-700 dark:text-green-200"
+                  : transfer.status === "rejected"
+                  ? "bg-red-200 text-red-800 dark:bg-red-700 dark:text-red-200"
+                  : "bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
+              }
+              cursor-not-allowed
+            `}
+          >
+            {transfer.status.toUpperCase()}
+          </span>
 
-        {/* Profile + From/To */}
-        <div className="flex flex-col lg:flex-row items-center gap-8">
-          <div className="relative w-40 h-40">
-            <img
-              className="w-40 h-40 object-cover rounded-full shadow-md dark:shadow-gray-800"
-              src="../blank-male.jpg"
-              alt={`${transferData.name}, ${transferData.currentPosition}`}
-            />
-            <div className="absolute bottom-2 right-2 bg-blue-100 text-blue-800 text-xs font-medium px-2 py-0.5 rounded-full dark:bg-blue-900 dark:text-blue-300">
-              Transfer Applicant
+
+          </div>
+
+          {/* Schools */}
+          <div className="md:col-span-3 p-6 bg-gray-50 dark:bg-gray-800 rounded-lg shadow-sm h-auto">
+            <div className="flex flex-wrap gap-6">
+              {/* From School */}
+              <div className="flex-1 min-w-[300px] p-6 bg-white dark:bg-gray-900 rounded-lg shadow-lg hover:shadow-xl transition-shadow">
+                <h5 className="flex items-center text-xl font-bold text-gray-900 dark:text-white mb-4">
+                  <HiAcademicCap className="mr-2 text-blue-500" /> From School
+                </h5>
+                {fromSchool || teacher.currentSchool ? (
+                <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+                  <li className="py-3 flex justify-between items-center">
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white flex items-center">
+                        <HiOutlineOfficeBuilding className="mr-1 text-gray-400" />
+                        {fromSchool?.name || teacher.currentSchool?.name}
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
+                        <HiLocationMarker className="mr-1 text-gray-400" />
+                        {fromSchool?.province || teacher.currentSchool?.province} {/* Use fromSchool.province, not teacher.currentSchoolType.Province */}
+                      </p>
+                    </div>
+                    <span className="text-base font-semibold text-gray-900 dark:text-white flex items-center">
+                      <HiLocationMarker className="mr-1 text-gray-400" />
+                      {fromSchool?.district || teacher.currentSchool?.district}
+                    </span>
+                  </li>
+                </ul>
+              ) : (
+                <p className="text-gray-500 dark:text-gray-400 flex items-center">
+                  <HiOutlineOfficeBuilding className="mr-2" /> No From School
+                </p>
+              )}
+
+              </div>
+
+              {/* To School */}
+              <div className="flex-1 min-w-[300px] p-6 bg-white dark:bg-gray-900 rounded-lg shadow-lg hover:shadow-xl transition-shadow">
+                <h5 className="flex items-center text-xl font-bold text-gray-900 dark:text-white mb-4">
+                  <HiAcademicCap className="mr-2 text-green-500" /> To School
+                </h5>
+                {toSchool ? (
+                  <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+                    <li className="py-3 flex justify-between items-center">
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white flex items-center">
+                          <HiOutlineOfficeBuilding className="mr-1 text-gray-400" />
+                          {toSchool.name}
+                        </p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
+                          <HiLocationMarker className="mr-1 text-gray-400" />
+                          {toSchool.province}
+                        </p>
+                      </div>
+                      <span className="text-base font-semibold text-gray-900 dark:text-white flex items-center">
+                        <HiLocationMarker className="mr-1 text-gray-400" />
+                        {toSchool.district}
+                      </span>
+                    </li>
+                  </ul>
+                ) : (
+                  <p className="text-gray-500 dark:text-gray-400 flex items-center">
+                    <HiOutlineOfficeBuilding className="mr-2" /> No To School
+                  </p>
+                )}
+              </div>
             </div>
           </div>
+        </div>
 
-          <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <InfoCard label="From School" value={transferData.schoolName} />
-            <InfoCard label="To School" value={transferData.newSchool} />
-            <InfoCard label="Transfer Date" value={transferData.transferDate} />
+        {/* Files + Personal Info */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 w-full">
+          {/* Files */}
+         <div className="md:col-span-1 p-6 bg-gray-50 dark:bg-gray-800 rounded-lg shadow-sm h-64">
+          <div className="grid grid-cols-2 gap-4 h-full">
+            {teacher.medicalCertificate && (
+              <a
+                href={`${IMAGE_BASE_URL}${teacher.medicalCertificate}`}
+                target="_blank"
+                className="rounded-lg bg-white dark:bg-gray-700 flex items-center justify-center shadow-sm"
+              >
+                Medical
+              </a>
+            )}
+            {teacher.academicQualifications && (
+              <a
+                href={`${IMAGE_BASE_URL}${teacher.academicQualifications}`}
+                target="_blank"
+                className="rounded-lg bg-white dark:bg-gray-700 flex items-center justify-center shadow-sm"
+              >
+                Academic
+              </a>
+            )}
+            {teacher.professionalQualifications && (
+              <a
+                href={`${IMAGE_BASE_URL}${teacher.professionalQualifications}`}
+                target="_blank"
+                className="col-span-2 rounded-lg bg-white dark:bg-gray-700 flex items-center justify-center shadow-sm"
+              >
+                Professional
+              </a>
+            )}
           </div>
         </div>
 
-        {/* Applicant Details */}
-        <div className="space-y-6">
-          <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl dark:text-white">{transferData.name}</h1>
-          <p className="text-lg text-primary-700 dark:text-primary-400">
-            {transferData.currentPosition} - {transferData.schoolName}
-          </p>
+          {/* Personal Info */}
+          <div className="md:col-span-3 p-6 bg-gray-50 dark:bg-gray-800 rounded-lg shadow-sm h-auto">
+            <div className="flex flex-wrap gap-6">
+              {/* Personal */}
+              <div className="flex-1 min-w-[300px] p-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+                <h5 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Personal Info</h5>
+                <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+                  <li className="py-2 flex justify-between"><span className="text-gray-500 dark:text-gray-400">First Name:</span><span className="font-medium text-gray-900 dark:text-white">{teacher.firstName}</span></li>
+                  <li className="py-2 flex justify-between"><span className="text-gray-500 dark:text-gray-400">Last Name:</span><span className="font-medium text-gray-900 dark:text-white">{teacher.lastName}</span></li>
+                  <li className="py-2 flex justify-between"><span className="text-gray-500 dark:text-gray-400">Address:</span><span className="font-medium text-gray-900 dark:text-white">{teacher.address}</span></li>
+                  <li className="py-2 flex justify-between"><span className="text-gray-500 dark:text-gray-400">Marital Status:</span><span className="font-medium text-gray-900 dark:text-white">{teacher.maritalStatus}</span></li>
+                </ul>
+              </div>
 
-          <div className="grid grid-cols-2 gap-4 mt-4">
-            <InfoCard label="NRC Number" value={transferData.nrc} />
-            <InfoCard label="TS Number" value={transferData.tsNo} />
-            <InfoCard label="Address" value={transferData.address} />
-            <InfoCard label="Marital Status" value={transferData.maritalStatus} />
-            <InfoCard label="Medical Certificate" value={transferData.medicalCertificate} />
-            <InfoCard label="Academic Qualifications" value={transferData.academicQualifications} />
-            <InfoCard label="Professional Qualifications" value={transferData.professionalQualifications} />
-            <InfoCard label="Current School Type" value={transferData.currentSchool} />
-            <InfoCard label="Subject Specialization" value={transferData.subjectSpecialization} />
-          </div>
-
-          {/* Experience */}
-          <div className="p-6 bg-gray-50 rounded-lg dark:bg-gray-800">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Experience</h3>
-            <ul className="list-disc ps-6 space-y-2 text-gray-600 dark:text-gray-400">
-              {transferData.experience.map((exp, idx) => (
-                <li key={idx}>
-                  {exp.school} — <span className="font-medium">{exp.years} years</span>
-                </li>
-              ))}
-            </ul>
+              {/* Contact */}
+              <div className="flex-1 min-w-[300px] p-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+                <h5 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Contact Info</h5>
+                <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+                  <li className="py-2 flex justify-between"><span className="text-gray-500 dark:text-gray-400">Email:</span><span className="font-medium text-gray-900 dark:text-white">{teacher.email}</span></li>
+                  <li className="py-2 flex justify-between"><span className="text-gray-500 dark:text-gray-400">NRC:</span><span className="font-medium text-gray-900 dark:text-white">{teacher.nrc}</span></li>
+                  <li className="py-2 flex justify-between"><span className="text-gray-500 dark:text-gray-400">TS Number:</span><span className="font-medium text-gray-900 dark:text-white">{teacher.tsNo}</span></li>
+                  <li className="py-2 flex justify-between"><span className="text-gray-500 dark:text-gray-400">Specialization:</span><span className="font-medium text-gray-900 dark:text-white">{teacher.subjectSpecialization}</span></li>
+                </ul>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Update Status Form: Only show if current status is pending */}
-        {transferData.transferStatus.toLowerCase() === "pending" && (
-          <div className="w-full p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 border-b pb-2">
-              Update Transfer Status
-            </h3>
-
-            <form onSubmit={confirmUpdate} className="space-y-4">
-              <div className="flex flex-col gap-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
+        {/* Status Form */}
+       {transfer.status === "pending" && (
+        <div className="w-full p-6 bg-gray-50 dark:bg-gray-800 rounded-lg shadow-sm">
+          <div className="w-full p-6 rounded-xl shadow-md flex flex-col">
+            <h5 className="mb-6 text-xl font-semibold text-gray-700 dark:text-gray-300">
+              Update Status
+            </h5>
+            <form onSubmit={handleStatusUpdate} className="flex flex-col gap-5 w-full">
+              <div className="w-full">
+                <label className="block mb-1 text-gray-500 dark:text-gray-400 text-sm font-medium">
+                  Status
+                </label>
                 <select
-                  className="border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-gray-900 dark:text-white bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                   value={status}
-                  onChange={(e) => setStatus(e.target.value)}
+                  onChange={(e) => setStatus(e.target.value as "approved" | "rejected")}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
                 >
-                  <option value="Approved">✅ Approved</option>
-                  <option value="Rejected">❌ Rejected</option>
+                  <option value="approved">Approve</option>
+                  <option value="rejected">Reject</option>
                 </select>
               </div>
-
-              <div className="flex flex-col gap-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Reason</label>
+              <div className="w-full">
+                <label className="block mb-1 text-gray-500 dark:text-gray-400 text-sm font-medium">
+                  Reason
+                </label>
                 <textarea
-                  className="border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-gray-900 dark:text-white bg-white dark:bg-gray-700 resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                  rows={3}
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
-                  placeholder="Enter reason here..."
+                  rows={4}
+                  placeholder="Enter reason..."
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
                 />
               </div>
-
               <button
                 type="submit"
-                className="w-full px-4 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+                className="mt-2 text-white bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 dark:bg-blue-500 dark:hover:bg-blue-600 font-medium rounded-lg text-sm px-4 py-2 w-full transition-all duration-200"
               >
                 Update Status
               </button>
             </form>
           </div>
-        )}
+        </div>
+      )}
+
       </div>
     </section>
   );
 };
 
-const InfoCard = ({ label, value }: { label: string; value: string }) => (
-  <div className="p-4 bg-gray-50 rounded-lg dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700">
-    <p className="text-sm text-gray-500 dark:text-gray-400">{label}</p>
-    <p className="text-gray-900 dark:text-white font-medium text-sm">{value}</p>
-  </div>
-);
-
-export default TransferViewComp;
+export default TransferViewLayout;

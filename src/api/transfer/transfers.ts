@@ -1,8 +1,18 @@
+// Define the School interface
+export interface School {
+  id: number;
+  name: string;
+  province: string;
+  district: string;
+}
+
+// Define the Teacher interface
 export interface Teacher {
   id: number;
   firstName: string;
   lastName: string;
   email: string;
+  profilePicture: string;
   nrc: string;
   tsNo: string;
   address: string;
@@ -12,6 +22,7 @@ export interface Teacher {
   professionalQualifications: string;
   currentSchoolType: string;
   currentSchoolName: string;
+  currentSchool: School | null; // fixed here
   currentPosition: string;
   subjectSpecialization: string;
   experience: { school: string; years: number }[];
@@ -20,6 +31,7 @@ export interface Teacher {
   currentSchoolId: number | null;
 }
 
+// Transfer response interface
 export interface TransferResponse {
   id: number;
   status: string;
@@ -33,34 +45,40 @@ export interface TransferResponse {
   toSchool: any;
 }
 
+// Fetch all transfers
 export const getTransfers = async (): Promise<TransferResponse[]> => {
   const res = await fetch("http://localhost:4000/api/transfers");
   if (!res.ok) throw new Error("Failed to fetch transfers");
+
   const data: TransferResponse[] = await res.json();
+
   return data.map((t) => ({
     ...t,
     teacher: {
       ...t.teacher,
-      experience: typeof t.teacher.experience === "string"
-        ? JSON.parse(t.teacher.experience)
-        : Array.isArray(t.teacher.experience)
-        ? t.teacher.experience
-        : [],
+      experience:
+        typeof t.teacher.experience === "string"
+          ? JSON.parse(t.teacher.experience)
+          : Array.isArray(t.teacher.experience)
+          ? t.teacher.experience
+          : [],
     },
   }));
 };
 
+// Submit a new transfer
 export const submitTransfer = async (teacherId: number, toSchoolId: number) => {
   const res = await fetch("http://localhost:4000/api/transfers", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ teacherId, toSchoolId }),
   });
+
   if (!res.ok) throw new Error("Failed to submit transfer");
   return await res.json();
 };
 
-
+// Fetch transfer by ID
 export const fetchTransferById = async (id: string) => {
   try {
     const res = await fetch(`http://localhost:4000/api/transfers/${id}`);
@@ -74,6 +92,7 @@ export const fetchTransferById = async (id: string) => {
   }
 };
 
+// Update transfer status
 export const updateTransferStatus = async (
   id: number,
   status: "approved" | "rejected",
@@ -102,4 +121,3 @@ export const updateTransferStatus = async (
     throw new Error(err.message || "An unexpected error occurred");
   }
 };
-

@@ -15,16 +15,21 @@ export interface Teacher {
   medicalCertificate?: string;
   subjectSpecialization?: string;
   currentSchoolName?: string;
+  currentSchoolType?: string;
   currentPosition?: string;
   nrc?: string;
   tsNo?: string;
-  school?: string;
-  position?: string;
-  subject?: string;
-  experience?: string;
+  experience?: string; 
   profilePicture?: string | null;
-  name?: string; // optional extra
+  currentSchool?: {
+    id: number;
+    name: string;
+    code: string;
+    district: string;
+    province: string;
+  };
 }
+
 
 // Fetch all teachers
 export const getTeachers = async (): Promise<Teacher[]> => {
@@ -34,19 +39,19 @@ export const getTeachers = async (): Promise<Teacher[]> => {
 };
 
 // Add/register teacher
-export const addTeacher = async (teacher: Teacher): Promise<Teacher> => {
+export const addTeacher = async (teacher: Teacher | FormData): Promise<Teacher> => {
+  const isFormData = teacher instanceof FormData;
   const res = await fetch(`${API_BASE_URL}/auth/register`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(teacher),
+    headers: isFormData ? {} : { "Content-Type": "application/json" },
+    body: isFormData ? teacher : JSON.stringify(teacher),
   });
   if (!res.ok) {
-    const err = await res.json();
+    const err = await res.json().catch(() => ({}));
     throw new Error(err.message || "Failed to add teacher");
   }
   return res.json();
 };
-
 // Get a teacher by string ID
 export const getTeacherById = async (id: string): Promise<Teacher> => {
   try {
@@ -82,7 +87,8 @@ export const updateTeacher = async (id: number, data: FormData): Promise<Teacher
 };
 
 // Get full profile picture URL
-export const getProfilePictureUrl = (path: string | null) => {
+export const getProfilePictureUrl = (path: string | null | undefined) => {
   if (!path) return "/blank-male.jpg";
   return `${IMAGE_BASE_URL}${path}`;
 };
+
