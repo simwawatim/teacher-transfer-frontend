@@ -9,16 +9,27 @@ export interface School {
 }
 
 const API_SCHOOLS = `${API_BASE_URL}/schools`;
+export const getSchools = async (token: string): Promise<School[]> => {
+  const res = await fetch(API_SCHOOLS, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  });
 
-// GET all schools
-export const getSchools = async (): Promise<School[]> => {
-  const res = await fetch(API_SCHOOLS);
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || "Failed to fetch schools");
+    let errMessage = "Failed to fetch schools";
+    try {
+      const err = await res.json();
+      errMessage = err.message || errMessage;
+    } catch (_) {
+    }
+    throw new Error(errMessage);
   }
+
   return res.json();
 };
+
 
 // GET single school by ID
 export const getSchool = async (id: number): Promise<School> => {

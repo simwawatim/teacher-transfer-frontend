@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { useRouter } from "next/router";
+import { fetchStats } from "../../api/stat/stats";
 
 interface Stat {
   title: string;
@@ -10,10 +12,17 @@ interface Stat {
 
 const HomeStats = () => {
   const [stats, setStats] = useState<Stat[]>([]);
+  const router = useRouter();
 
   useEffect(() => {
-    fetch("http://localhost:4000/api/stats")
-      .then((res) => res.json())
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      router.push("/");
+      return;
+    }
+
+    fetchStats(token)
       .then((data) => {
         setStats([
           {
@@ -38,8 +47,17 @@ const HomeStats = () => {
             link: "/transfer",
           },
         ]);
+      })
+      .catch((err) => {
+        if (
+          err.message === "Access denied. No token provided." ||
+          err.message === "Invalid or expired token."
+        ) {
+          router.push("/login");
+        }
+        console.error(err);
       });
-  }, []);
+  }, [router]);
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
@@ -53,7 +71,9 @@ const HomeStats = () => {
             <span className="text-4xl">{stat.icon}</span>
             <h5 className="text-xl font-bold text-white">{stat.title}</h5>
           </div>
-          <p className="text-3xl font-extrabold text-indigo-500 mb-2">{stat.value}</p>
+          <p className="text-3xl font-extrabold text-indigo-500 mb-2">
+            {stat.value}
+          </p>
           <p className="text-white text-sm">{stat.description}</p>
         </a>
       ))}

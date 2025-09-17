@@ -22,11 +22,18 @@ const TeacherViewLayout: React.FC<TeacherViewProps> = ({ teacherId }) => {
     const id = teacherId || (router.query.id as string);
     if (!id) return;
 
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      router.push("/");
+      return;
+    }
+
     const loadTeacher = async () => {
       setLoading(true);
       setError(null);
       try {
-        const data = await getTeacherById(id);
+        const data = await getTeacherById(id, token);
         if (!data) setError("Teacher not found");
         else {
           setTeacher({

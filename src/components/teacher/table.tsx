@@ -2,6 +2,8 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import Swal from "sweetalert2";
 import { getTeachers, addTeacher, Teacher } from "../../api/teachers/teachers";
+import { getSchools } from "../../api/school/schools"
+import router from "next/router";
 
 const TeachersTable = () => {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
@@ -34,31 +36,37 @@ const TeachersTable = () => {
   const itemsPerPage = 10;
 
   useEffect(() => {
-    const fetchTeachers = async () => {
-      try {
-        const data = await getTeachers();
-        setTeachers(data);
-      } catch (err: any) {
-        console.error("Error fetching teachers:", err);
-        Swal.fire("Error", "Failed to fetch teachers.", "error");
-      }
-    };
+      const token = localStorage.getItem("token");
 
-    const fetchSchools = async () => {
-      try {
-        const response = await fetch("http://localhost:4000/api/schools");
-        if (!response.ok) throw new Error("Failed to fetch schools");
-        const data = await response.json();
-        setSchools(data);
-      } catch (err: any) {
-        console.error("Error fetching schools:", err);
-        Swal.fire("Error", "Failed to fetch schools.", "error");
+      if (!token) {
+        router.push("/");
+        return;
       }
-    };
 
-    fetchTeachers();
-    fetchSchools();
-  }, []);
+      const fetchTeachers = async () => {
+        try {
+          const data = await getTeachers(token);
+          setTeachers(data);
+        } catch (err: any) {
+          console.error("Error fetching teachers:", err);
+          Swal.fire("Error", "Failed to fetch teachers.", "error");
+        }
+      };
+
+      const fetchSchools = async () => {
+        try {
+          const data = await getSchools(token);
+          setSchools(data);
+        } catch (err: any) {
+          console.error("Error fetching schools:", err);
+          Swal.fire("Error", "Failed to fetch schools.", "error");
+        }
+      };
+
+      fetchTeachers();
+      fetchSchools();
+    }, []);
+
 
   // ===== Handle file change =====
   const handleFileChange = (field: string, file: File | null) => {
