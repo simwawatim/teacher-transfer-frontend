@@ -227,7 +227,7 @@ const TeachersTable = () => {
                 <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">{teacher.nrc}</td>
                 <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">{teacher.tsNo}</td>
                 <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
-                  {teacher.currentSchoolName}
+                  {teacher.currentSchoolName ? teacher.currentSchool.name : "-"}
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">{teacher.currentPosition}</td>
                 <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">

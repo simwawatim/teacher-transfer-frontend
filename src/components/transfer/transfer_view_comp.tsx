@@ -6,14 +6,21 @@ import { HiAcademicCap, HiLocationMarker, HiOutlineOfficeBuilding } from "react-
 import { fetchTransferById, updateTransferStatus, TransferResponse } from "../../api/transfer/transfers";
 import { IMAGE_BASE_URL } from "../../api/base/base"
 import { requireToken } from "@/api/base/token";
+import { getCurrentUser } from "@/api/base/jwt";
 
 const TransferViewLayout: React.FC = () => {
   const router = useRouter();
   const [transfer, setTransfer] = useState<TransferResponse | null>(null);
   const [status, setStatus] = useState<"approved" | "rejected">("approved");
   const [reason, setReason] = useState("");
+  const [role, setRole] = useState<string | null>(null);
 
   const { id } = router.query;
+
+    useEffect(() => {
+        const currentUser = getCurrentUser();
+        setRole(currentUser?.role ?? null);
+    }, []);
 
   useEffect(() => {
 
@@ -230,7 +237,9 @@ const TransferViewLayout: React.FC = () => {
         </div>
 
         {/* Status Form */}
-       {transfer.status === "pending" && (
+
+      
+       {role === "admin" && transfer.status === "pending" && (
         <div className="w-full p-6 bg-gray-50 dark:bg-gray-800 rounded-lg shadow-sm">
           <div className="w-full p-6 rounded-xl shadow-md flex flex-col">
             <h5 className="mb-6 text-xl font-semibold text-gray-700 dark:text-gray-300">

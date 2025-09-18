@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { login } from "../api/auth/auth"; 
+import { login } from "../api/auth/auth";
 
 const LoginPage = () => {
-  const [username, setusername] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -18,22 +18,20 @@ const LoginPage = () => {
     setLoading(true);
 
     try {
-      const data = await login(username, password); // call API
-      console.log("Login success:", data);
+      const data = await login(username, password);
 
-      // save token if returned
       if (data.token) {
         localStorage.setItem("token", data.token);
       }
 
-      router.push("/home"); // redirect after success
-    } catch (err: any) {
-      // handle API error well
-      if (err?.message) {
-        setError(err.message);
+      const userRole = data.user?.role;
+      if (userRole === "admin" || userRole === "headteacher") {
+        router.push("/home");
       } else {
-        setError("Something went wrong. Please try again.");
+        router.push("/transfer");
       }
+    } catch (err: any) {
+      setError(err?.message || "Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -41,29 +39,29 @@ const LoginPage = () => {
 
   return (
     <div className="min-h-screen flex">
-      {/* Left side - Image */}
+      {/* Left side - Background image */}
       <div
         className="hidden md:flex w-2/3 bg-cover bg-center"
         style={{ backgroundImage: `url(/home.jpg)` }}
       ></div>
 
       {/* Right side - Form */}
-      <div className="w-full md:w-1/3 flex flex-col justify-center px-6 py-12 bg-gray-900">
-        <div className="sm:mx-auto sm:w-full sm:max-w-sm">
-          <h2 className="mt-8 text-center text-2xl font-bold tracking-tight text-white sm:text-3xl">
-            Welcome to the Teacher Transfer System
-          </h2>
-          <h5 className="mt-4 text-center text-lg font-medium text-gray-200 sm:text-xl">
-            Sign in to your account
-          </h5>
-        </div>
+      <div className="w-full md:w-1/3 flex items-center justify-center bg-gray-900 relative">
+        <div className="bg-white/10 backdrop-blur-md rounded-2xl shadow-lg p-8 w-full max-w-md">
+          {/* Header */}
+          <div className="text-center">
+            <h2 className="text-3xl font-bold text-white">
+              Teacher Transfer System
+            </h2>
+            <p className="mt-2 text-gray-300">Sign in to your account</p>
+          </div>
 
-        <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
-          <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="mt-8 space-y-6">
             <div>
               <label
                 htmlFor="username"
-                className="block text-sm font-medium text-gray-100"
+                className="block text-sm font-medium text-gray-200"
               >
                 Username
               </label>
@@ -73,8 +71,9 @@ const LoginPage = () => {
                 name="username"
                 required
                 value={username}
-                onChange={(e) => setusername(e.target.value)}
-                className="mt-2 block w-full rounded-md bg-white/5 px-3 py-1.5 text-base text-white placeholder:text-gray-500 focus:outline-2 focus:outline-indigo-500 sm:text-sm"
+                onChange={(e) => setUsername(e.target.value)}
+                className="mt-2 block w-full rounded-lg bg-gray-800 px-4 py-2 text-base text-white placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition sm:text-sm"
+                placeholder="Enter your username"
               />
             </div>
 
@@ -82,18 +81,16 @@ const LoginPage = () => {
               <div className="flex items-center justify-between">
                 <label
                   htmlFor="password"
-                  className="block text-sm font-medium text-gray-100"
+                  className="block text-sm font-medium text-gray-200"
                 >
                   Password
                 </label>
-                <div className="text-sm">
-                  <a
-                    href="#"
-                    className="font-semibold text-indigo-400 hover:text-indigo-300"
-                  >
-                    Forgot password?
-                  </a>
-                </div>
+                <a
+                  href="#"
+                  className="text-sm font-medium text-indigo-400 hover:text-indigo-300 transition"
+                >
+                  Forgot password?
+                </a>
               </div>
               <input
                 id="password"
@@ -102,52 +99,52 @@ const LoginPage = () => {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="mt-2 block w-full rounded-md bg-white/5 px-3 py-1.5 text-base text-white placeholder:text-gray-500 focus:outline-2 focus:outline-indigo-500 sm:text-sm"
+                className="mt-2 block w-full rounded-lg bg-gray-800 px-4 py-2 text-base text-white placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition sm:text-sm"
+                placeholder="••••••••"
               />
             </div>
 
-            {/* Show error message */}
+            {/* Error message */}
             {error && (
-              <div className="rounded-md bg-red-500/10 p-3 text-sm text-red-400 text-center">
+              <div className="rounded-md bg-red-500/20 p-3 text-sm text-red-300 text-center">
                 {error}
               </div>
             )}
 
-            <div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="flex w-full justify-center rounded-md bg-indigo-500 px-3 py-1.5 text-sm font-semibold text-white hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-indigo-500 disabled:opacity-50"
-              >
-                {loading ? (
-                  <span className="flex items-center gap-2">
-                    <svg
-                      className="h-4 w-4 animate-spin text-white"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8v4l3-3-3-3v4a12 12 0 00-12 12h4z"
-                      ></path>
-                    </svg>
-                    Signing in...
-                  </span>
-                ) : (
-                  "Sign in"
-                )}
-              </button>
-            </div>
+            {/* Submit button */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full flex justify-center items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 active:scale-[0.98] focus:ring-2 focus:ring-indigo-500 focus:outline-none disabled:opacity-50 transition"
+            >
+              {loading ? (
+                <>
+                  <svg
+                    className="h-5 w-5 animate-spin text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8v4l3-3-3-3v4a12 12 0 00-12 12h4z"
+                    ></path>
+                  </svg>
+                  Signing in...
+                </>
+              ) : (
+                "Sign In"
+              )}
+            </button>
           </form>
         </div>
       </div>
