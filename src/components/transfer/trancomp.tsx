@@ -40,11 +40,13 @@ const TransferTable = () => {
     reason: "",
   });
 
-  // fetch transfers
   useEffect(() => {
+      const token = requireToken(router);
+      
+      if (!token) return;
     const fetchTransfers = async () => {
       try {
-        const data = await getTransfers();
+        const data = await getTransfers(token);
         setTeachers(data);
       } catch (err: any) {
         let errorMsg = "Failed to load transfers";
@@ -85,6 +87,9 @@ const TransferTable = () => {
   };
 
   const handleActionSubmit = async () => {
+         const token = requireToken(router);
+      
+      if (!token) return;
     if (!selectedTeacher) return;
     setSubmittingAction(true);
 
@@ -98,7 +103,7 @@ const TransferTable = () => {
     });
 
     try {
-      await submitTransfer(selectedTeacher.teacher.id, selectedTeacher.toSchoolId || 0);
+      await submitTransfer(selectedTeacher.teacher.id, selectedTeacher.toSchoolId || 0, token);
       setTeachers((prev) =>
         prev.map((t) =>
           t.id === selectedTeacher.id ? { ...t, status: actionData.status } : t
@@ -121,6 +126,10 @@ const TransferTable = () => {
   };
 
   const handleRequestTransfer = async () => {
+
+         const token = requireToken(router);
+      
+      if (!token) return;
     if (!transferRequest.toSchoolId) {
       Swal.fire("Error", "Please select a new school", "error");
       return;
@@ -138,8 +147,8 @@ const TransferTable = () => {
     });
 
     try {
-      await submitTransfer(transferRequest.teacherId, transferRequest.toSchoolId);
-      const data = await getTransfers();
+      await submitTransfer(transferRequest.teacherId, transferRequest.toSchoolId, token);
+      const data = await getTransfers(token);
       setTeachers(data);
       setShowRequestModal(false);
       setTransferRequest({ teacherId: 123, toSchoolId: 0, reason: "" }); // reset

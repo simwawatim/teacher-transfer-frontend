@@ -5,6 +5,7 @@ import Swal from "sweetalert2";
 import { HiAcademicCap, HiLocationMarker, HiOutlineOfficeBuilding } from "react-icons/hi"
 import { fetchTransferById, updateTransferStatus, TransferResponse } from "../../api/transfer/transfers";
 import { IMAGE_BASE_URL } from "../../api/base/base"
+import { requireToken } from "@/api/base/token";
 
 const TransferViewLayout: React.FC = () => {
   const router = useRouter();
@@ -15,11 +16,16 @@ const TransferViewLayout: React.FC = () => {
   const { id } = router.query;
 
   useEffect(() => {
+
+    
+    const token = requireToken(router);
+          
+    if (!token) return;
     if (!id) return; 
 
     const loadTransfer = async () => {
       try {
-        const data = await fetchTransferById(id as string);
+        const data = await fetchTransferById(id as string, token);
         if (typeof data.teacher.experience === "string") {
           data.teacher.experience = JSON.parse(data.teacher.experience);
         }
@@ -37,9 +43,12 @@ const TransferViewLayout: React.FC = () => {
   const handleStatusUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!transfer) return;
+    const token = requireToken(router);
+          
+    if (!token) return;
 
     try {
-      await updateTransferStatus(transfer.id, status, reason);
+      await updateTransferStatus(transfer.id, status, reason, token);
       Swal.fire("Success", "Transfer status updated", "success");
       setTransfer({ ...transfer, status }); // update local state
     } catch (err: any) {
@@ -237,8 +246,10 @@ const TransferViewLayout: React.FC = () => {
                   onChange={(e) => setStatus(e.target.value as "approved" | "rejected")}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
                 >
-                  <option value="approved">Approve</option>
-                  <option value="rejected">Reject</option>
+                <option value="" selected disabled>Select</option>
+                <option value="approved">Approve</option>
+                <option value="rejected">Reject</option>
+
                 </select>
               </div>
               <div className="w-full">

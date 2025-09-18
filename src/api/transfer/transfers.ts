@@ -1,3 +1,5 @@
+import { apiClient } from "../../api/client/apiClient";
+
 // Define the School interface
 export interface School {
   id: number;
@@ -22,14 +24,13 @@ export interface Teacher {
   professionalQualifications: string;
   currentSchoolType: string;
   currentSchoolName: string;
-  currentSchool: School | null; // fixed here
+  currentSchool: School | null;
   currentPosition: string;
   subjectSpecialization: string;
   experience: { school: string; years: number }[];
   createdAt: string;
   updatedAt: string;
   currentSchoolId: number | null;
-
 }
 
 // Transfer response interface
@@ -47,78 +48,56 @@ export interface TransferResponse {
 }
 
 // Fetch all transfers
-export const getTransfers = async (): Promise<TransferResponse[]> => {
-  const res = await fetch("http://localhost:4000/api/transfers");
-  if (!res.ok) throw new Error("Failed to fetch transfers");
-
-  const data: TransferResponse[] = await res.json();
-
-  return data.map((t) => ({
-    ...t,
-    teacher: {
-      ...t.teacher,
-      experience:
-        typeof t.teacher.experience === "string"
-          ? JSON.parse(t.teacher.experience)
-          : Array.isArray(t.teacher.experience)
-          ? t.teacher.experience
-          : [],
-    },
-  }));
-};
+export const getTransfers = (token: string | null): Promise<TransferResponse[]> =>
+  apiClient<TransferResponse[]>("http://localhost:4000/api/transfers", {}, token).then(
+    (data) =>
+      data.map((t) => ({
+        ...t,
+        teacher: {
+          ...t.teacher,
+          experience:
+            typeof t.teacher.experience === "string"
+              ? JSON.parse(t.teacher.experience)
+              : Array.isArray(t.teacher.experience)
+              ? t.teacher.experience
+              : [],
+        },
+      }))
+  );
 
 // Submit a new transfer
-export const submitTransfer = async (teacherId: number, toSchoolId: number) => {
-  const res = await fetch("http://localhost:4000/api/transfers", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ teacherId, toSchoolId }),
-  });
-
-  if (!res.ok) throw new Error("Failed to submit transfer");
-  return await res.json();
-};
+export const submitTransfer = (
+  teacherId: number,
+  toSchoolId: number,
+  token: string | null
+) =>
+  apiClient(
+    "http://localhost:4000/api/transfers",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ teacherId, toSchoolId }),
+    },
+    token
+  );
 
 // Fetch transfer by ID
-export const fetchTransferById = async (id: string) => {
-  try {
-    const res = await fetch(`http://localhost:4000/api/transfers/${id}`);
-    if (!res.ok) throw new Error("Failed to fetch transfer data");
-
-    const data = await res.json();
-    return data;
-  } catch (err) {
-    console.error("Error fetching transfer:", err);
-    throw err;
-  }
-};
+export const fetchTransferById = (id: string, token: string | null): Promise<TransferResponse> =>
+  apiClient<TransferResponse>(`http://localhost:4000/api/transfers/${id}`, {}, token);
 
 // Update transfer status
-export const updateTransferStatus = async (
+export const updateTransferStatus = (
   id: number,
   status: "approved" | "rejected",
-  reason?: string
-) => {
-  try {
-    const url = `http://localhost:4000/api/transfers/${id}/status`;
-
-    const res = await fetch(url, {
+  reason?: string,
+  token: string | null = null
+) =>
+  apiClient(
+    `http://localhost:4000/api/transfers/${id}/status`,
+    {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status, reason }),
-    });
-
-    if (!res.ok) {
-      let errorMessage = "Failed to update transfer status";
-      try {
-        const errorData = await res.json();
-        errorMessage = errorData.message || errorMessage;
-      } catch {}
-      throw new Error(errorMessage);
-    }
-
-    return await res.json();
-  } catch (err: any) {
-    throw new Error(err.message || "An unexpected error occurred");
-  }
-};
+    },
+    token
+  );
