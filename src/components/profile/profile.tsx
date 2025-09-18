@@ -1,7 +1,9 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { HiAcademicCap, HiLocationMarker, HiOutlineOfficeBuilding } from "react-icons/hi";
-import { IMAGE_BASE_URL } from "../../api/base/base";
+import { IMAGE_BASE_URL,  API_BASE_URL } from "../../api/base/base";
+import { requireToken } from "@/api/base/token";
+import router from "next/router";
 
 interface School {
   id: number;
@@ -42,8 +44,17 @@ const TeacherProfilePage: React.FC<{ teacherId: number }> = ({ teacherId }) => {
 
   useEffect(() => {
     const fetchTeacher = async () => {
+        const token = requireToken(router);
+      
+        if (!token) return;
       try {
-        const res = await fetch(`http://localhost:4000/api/teachers/${teacherId}`);
+        const res = await fetch(`${API_BASE_URL}/teachers/${teacherId}`,{
+            headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+      },
+
+        });
         if (!res.ok) throw new Error("Failed to fetch teacher data");
         const data = await res.json();
         setTeacher(data);
@@ -66,14 +77,22 @@ const TeacherProfilePage: React.FC<{ teacherId: number }> = ({ teacherId }) => {
   };
 
   const handleSave = async () => {
+    const token = requireToken(router);
+      
+    if (!token) return;
     if (!teacher) return;
     try {
-      const res = await fetch(`http://localhost:4000/api/teachers/${teacher.id}`, {
+      const res = await fetch(`${API_BASE_URL}/teachers/${teacher.id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify(formData),
       });
+
       if (!res.ok) throw new Error("Failed to update teacher");
+
       const updatedTeacher = await res.json();
       setTeacher(updatedTeacher);
       setModalOpen(false);

@@ -18,7 +18,7 @@ const ProfilePage = () => {
         {/* Main Content */}
         <main className="flex-1 p-6 overflow-y-auto">
           {/* Pass the teacherId prop */}
-          <TeacherProfilePage teacherId={8} />
+          <TeacherProfilePage teacherId={10} />
         </main>
       </div>
     </div>
