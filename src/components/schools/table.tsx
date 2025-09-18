@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { getSchools, addSchool, updateSchool, deleteSchool, School } from "../../api/school/schools";
+import { requireToken } from "../../api/base/token";
+import router from "next/router";
 
 const provinces = {
   Lusaka: ["Lusaka", "Chilanga", "Kafue"],
@@ -21,10 +23,14 @@ const SchoolsTable = () => {
   const itemsPerPage = 10;
 
   const fetchSchools = async () => {
+    const token = requireToken(router);
+
+    if (!token) return;
+
     setLoading(true);
     setError("");
     try {
-      const data = await getSchools();
+      const data = await getSchools(token);
       setSchools(data);
     } catch (err: any) {
       console.error(err);
@@ -39,15 +45,21 @@ const SchoolsTable = () => {
   }, []);
 
   const handleAddSchool = async () => {
+
+    const token = requireToken(router);
+
+    if (!token) return;
+
     if (!newSchool.name || !newSchool.district || !newSchool.province || !newSchool.code) return;
     setLoading(true);
     setError("");
+
     try {
       if (editingSchool) {
-        const updated = await updateSchool({ ...newSchool, id: editingSchool.id });
+        const updated = await updateSchool({ ...newSchool, id: editingSchool.id }, token);
         setSchools(schools.map(s => (s.id === updated.id ? updated : s)));
       } else {
-        const added = await addSchool(newSchool);
+        const added = await addSchool(newSchool, token);
         setSchools([...schools, added]);
       }
       setNewSchool({ name: "", code: "", district: "", province: "" });
@@ -68,10 +80,14 @@ const SchoolsTable = () => {
   };
 
   const handleDeleteSchool = async (id: number) => {
+
+     const token = requireToken(router);
+
+    if (!token) return;
     setLoading(true);
     setError("");
     try {
-      await deleteSchool(id);
+      await deleteSchool(id, token);
       setSchools(schools.filter(s => s.id !== id));
     } catch (err: any) {
       console.error(err);

@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { getTransfers, submitTransfer, TransferResponse } from "../../api/transfer/transfers";
 import Link from "next/link";
 import Swal from "sweetalert2";
+import { getSchools } from "@/api/school/schools";
+import { requireToken } from "@/api/base/token";
+import router from "next/router";
 
 interface ActionData {
   status: string;
@@ -9,12 +12,13 @@ interface ActionData {
 }
 
 interface School {
-  id: number;
+  id?: number;
   name: string;
-  code: string;
   district: string;
   province: string;
+  code?: string;
 }
+
 
 const TransferTable = () => {
   const [teachers, setTeachers] = useState<TransferResponse[]>([]);
@@ -60,13 +64,11 @@ const TransferTable = () => {
   // fetch schools
   useEffect(() => {
     const fetchSchools = async () => {
+      const token = requireToken(router);
+
+      if (!token) return;
       try {
-        const res = await fetch("http://localhost:4000/api/schools");
-        if (!res.ok) {
-          const errData = await res.json().catch(() => null);
-          throw new Error(errData?.message || "Failed to fetch schools");
-        }
-        const data = await res.json();
+        const data = await getSchools(token);
         setSchools(data);
       } catch (err: any) {
         console.error("Failed to fetch schools:", err.message);
@@ -207,21 +209,23 @@ const TransferTable = () => {
                   {t.teacher.firstName} {t.teacher.lastName}
                 </td>
                 <td className="px-6 py-4">{t.teacher.nrc}</td>
-                <td className="px-6 py-4">{t.teacher.currentSchoolName}</td>
-                <td className="px-6 py-4">{t.toSchoolId || "-"}</td>
+                {t.teacher.currentSchool ? t.teacher.currentSchool.name : "-"}
+                <td className="px-6 py-4">  {t.toSchool ? t.toSchool.name : "-"}</td>
                 <td className="px-6 py-4">
-                  <span
-                    className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                      t.status === "Approved"
+                  <button
+                    onClick={() => alert(`Status: ${t.status}`)}
+                    className={`px-2 py-1 rounded-full text-xs font-semibold focus:outline-none ${
+                      status === "approved"
                         ? "bg-green-100 text-green-800"
-                        : t.status === "Rejected"
+                        : status === "rejected"
                         ? "bg-red-100 text-red-800"
                         : "bg-yellow-100 text-yellow-800"
                     }`}
                   >
                     {t.status || "Pending"}
-                  </span>
+                  </button>
                 </td>
+
                 <td className="px-6 py-4">{new Date(t.createdAt).toLocaleDateString()}</td>
                 <td className="px-6 py-4 text-sm text-indigo-600 hover:text-indigo-900">
                   <Link href={`/transfer-view/${t.id}`}>View</Link>

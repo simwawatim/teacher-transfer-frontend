@@ -12,21 +12,19 @@ const TransferViewLayout: React.FC = () => {
   const [status, setStatus] = useState<"approved" | "rejected">("approved");
   const [reason, setReason] = useState("");
 
-  // Get id from query parameters
   const { id } = router.query;
 
   useEffect(() => {
-    if (!id) return; // wait until router is ready
+    if (!id) return; 
 
     const loadTransfer = async () => {
       try {
         const data = await fetchTransferById(id as string);
-        // Parse experience if needed
         if (typeof data.teacher.experience === "string") {
           data.teacher.experience = JSON.parse(data.teacher.experience);
         }
         setTransfer(data);
-        setStatus(data.status as "approved" | "rejected"); // initialize status
+        setStatus(data.status as "approved" | "rejected");
       } catch (err) {
         console.error(err);
         Swal.fire("Error", "Failed to load transfer data", "error");

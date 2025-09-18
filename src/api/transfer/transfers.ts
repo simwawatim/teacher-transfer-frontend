@@ -29,6 +29,7 @@ export interface Teacher {
   createdAt: string;
   updatedAt: string;
   currentSchoolId: number | null;
+
 }
 
 // Transfer response interface
