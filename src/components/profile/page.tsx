@@ -1,8 +1,13 @@
 import HeaderPage from "../header/page";
 import Sidebar from "../sidenav/page";
 import TeacherProfilePage from "./profile";
+import { getCurrentUser } from "../../api/base/jwt"
 
 const ProfilePage = () => {
+
+  const currentUser = getCurrentUser();
+  console.log(currentUser);
+  const teacherId = currentUser?.id ?? 0;
   return (
     <div className="flex flex-col h-screen">
       {/* Top Header */}
@@ -18,7 +23,7 @@ const ProfilePage = () => {
         {/* Main Content */}
         <main className="flex-1 p-6 overflow-y-auto">
           {/* Pass the teacherId prop */}
-          <TeacherProfilePage teacherId={10} />
+          <TeacherProfilePage  teacherId={teacherId}  />
         </main>
       </div>
     </div>

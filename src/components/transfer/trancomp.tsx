@@ -5,6 +5,7 @@ import Swal from "sweetalert2";
 import { getSchools } from "@/api/school/schools";
 import { requireToken } from "@/api/base/token";
 import router from "next/router";
+import { getCurrentUser } from "@/api/base/jwt";
 
 interface ActionData {
   status: string;
@@ -33,9 +34,13 @@ const TransferTable = () => {
 
   const [submittingAction, setSubmittingAction] = useState(false);
   const [submittingRequest, setSubmittingRequest] = useState(false);
+  const currentUser = getCurrentUser();
+  console.log(currentUser);
+  const teacherId = currentUser?.id ?? 0;
 
   const [transferRequest, setTransferRequest] = useState({
-    teacherId: 8,
+    
+    teacherId: teacherId,
     toSchoolId: 0,
     reason: "",
   });
@@ -218,7 +223,7 @@ const TransferTable = () => {
                   {t.teacher.firstName} {t.teacher.lastName}
                 </td>
                 <td className="px-6 py-4">{t.teacher.nrc}</td>
-                {t.teacher.currentSchool ? t.teacher.currentSchool.name : "-"}
+                <td className="px-6 py-4">{t.teacher.currentSchool ? t.teacher.currentSchool.name : "-"}</td>
                 <td className="px-6 py-4">  {t.toSchool ? t.toSchool.name : "-"}</td>
                 <td className="px-6 py-4">
                   <button
@@ -258,7 +263,7 @@ const TransferTable = () => {
             <h2 className="text-white font-bold mb-4">Request Transfer</h2>
             <div className="grid grid-cols-1 gap-4">
               {/* Static teacher */}
-              <p className="text-white">Teacher ID: {transferRequest.teacherId}</p>
+              
 
               {/* School dropdown */}
               <select
