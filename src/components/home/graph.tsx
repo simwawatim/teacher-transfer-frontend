@@ -10,6 +10,7 @@ import {
   CartesianGrid,
 } from "recharts";
 import { fetchStats } from "../../api/stat/stats";
+import router from "next/router";
 
 const HomeGraph = () => {
   const [data, setData] = useState<any[]>([]);
@@ -17,7 +18,10 @@ const HomeGraph = () => {
   useEffect(() => {
     const token = localStorage.getItem("token");
 
-    if (!token) return; 
+    if (!token) {
+      router.push("/");
+      return;
+    }
 
     fetchStats(token)
       .then((res) => {

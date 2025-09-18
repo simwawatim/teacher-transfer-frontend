@@ -19,8 +19,7 @@ export const apiClient = async <T>(
 
   const res = await fetch(url, { ...options, headers });
   if (res.status === 401) {
-    Router.push("/login");
-    throw new Error("Unauthorized. Redirecting to login...");
+    Router.push("/");
   }
 
   if (!res.ok) {
