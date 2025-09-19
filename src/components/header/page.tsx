@@ -1,17 +1,47 @@
-import { BellIcon, Cog6ToothIcon} from "@heroicons/react/24/outline";
+"use client";
+
+import { BellIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
 import { useState, useEffect } from "react";
-import Link from "next/link"; // if using Next.js
+import Link from "next/link";
+import { API_BASE_URL } from "@/api/base/base"; // your API base URL
+import { getCurrentUser } from "@/api/base/jwt"; // your JWT helper
 
 const HeaderPage = () => {
-  const defaultImage =
-    "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y";
+  const defaultImage = "/blank-male.jpg";
 
-  // Example: unread notifications count
   const [unreadCount, setUnreadCount] = useState(0);
+  const [profileImage, setProfileImage] = useState<string>(defaultImage);
 
   useEffect(() => {
-    // fetch unread count from API or set dummy value
+    // Dummy unread notifications
     setUnreadCount(3);
+
+    // Fetch logged-in user's profile picture
+    const fetchProfilePicture = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      try {
+        const res = await fetch(`${API_BASE_URL}/teachers/me/profile-picture`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!res.ok) throw new Error("Failed to fetch profile picture");
+
+        const data = await res.json();
+        if (data.profilePicture) {
+      
+          const updatedUrl =   data.profilePicture.replace(':3000', ':4000');
+          setProfileImage(updatedUrl);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchProfilePicture();
   }, []);
 
   return (
@@ -32,7 +62,10 @@ const HeaderPage = () => {
         {/* Right Side: Icons + Profile */}
         <div className="flex items-center space-x-4">
           {/* Notification Icon */}
-          <Link href="/notifications" className="relative p-2 rounded-full hover:bg-gray-700">
+          <Link
+            href="/notifications"
+            className="relative p-2 rounded-full hover:bg-gray-700"
+          >
             <BellIcon className="h-6 w-6 text-white" />
             {unreadCount > 0 && (
               <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full">
@@ -46,11 +79,10 @@ const HeaderPage = () => {
             <Cog6ToothIcon className="h-6 w-6 text-white" />
           </Link>
 
-
           {/* Profile */}
           <Link href="/profile">
             <img
-              src={defaultImage}
+              src={profileImage}
               alt="Profile"
               className="w-10 h-10 rounded-full border-2 border-gray-600 shadow-sm cursor-pointer"
             />

@@ -1,7 +1,8 @@
 "use client";
+
 import React, { useEffect, useState } from "react";
 import { HiAcademicCap, HiLocationMarker, HiOutlineOfficeBuilding } from "react-icons/hi";
-import { IMAGE_BASE_URL,  API_BASE_URL } from "../../api/base/base";
+import { IMAGE_BASE_URL, API_BASE_URL } from "../../api/base/base";
 import { requireToken } from "@/api/base/token";
 import router from "next/router";
 
@@ -42,18 +43,17 @@ const TeacherProfilePage: React.FC<{ teacherId: number }> = ({ teacherId }) => {
     maritalStatus: "",
   });
 
+  const [profileFile, setProfileFile] = useState<File | null>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+
   useEffect(() => {
     const fetchTeacher = async () => {
-        const token = requireToken(router);
-      
-        if (!token) return;
-      try {
-        const res = await fetch(`${API_BASE_URL}/teachers/${teacherId}`,{
-            headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-      },
+      const token = requireToken(router);
+      if (!token) return;
 
+      try {
+        const res = await fetch(`${API_BASE_URL}/teachers/${teacherId}`, {
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
         });
         if (!res.ok) throw new Error("Failed to fetch teacher data");
         const data = await res.json();
@@ -63,6 +63,7 @@ const TeacherProfilePage: React.FC<{ teacherId: number }> = ({ teacherId }) => {
           address: data.address,
           maritalStatus: data.maritalStatus,
         });
+        setPreviewImage(data.profilePicture ? `${IMAGE_BASE_URL}/${data.profilePicture}` : null);
       } catch (error) {
         console.error(error);
       } finally {
@@ -76,19 +77,28 @@ const TeacherProfilePage: React.FC<{ teacherId: number }> = ({ teacherId }) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setProfileFile(e.target.files[0]);
+      setPreviewImage(URL.createObjectURL(e.target.files[0]));
+    }
+  };
+
   const handleSave = async () => {
     const token = requireToken(router);
-      
-    if (!token) return;
-    if (!teacher) return;
+    if (!token || !teacher) return;
+
     try {
+      const dataToSend = new FormData();
+      dataToSend.append("email", formData.email);
+      dataToSend.append("address", formData.address);
+      dataToSend.append("maritalStatus", formData.maritalStatus);
+      if (profileFile) dataToSend.append("profilePicture", profileFile);
+
       const res = await fetch(`${API_BASE_URL}/teachers/${teacher.id}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(formData),
+        headers: { Authorization: `Bearer ${token}` },
+        body: dataToSend,
       });
 
       if (!res.ok) throw new Error("Failed to update teacher");
@@ -96,12 +106,14 @@ const TeacherProfilePage: React.FC<{ teacherId: number }> = ({ teacherId }) => {
       const updatedTeacher = await res.json();
       setTeacher(updatedTeacher);
       setModalOpen(false);
+      setProfileFile(null);
       alert("Teacher updated successfully!");
     } catch (error) {
       console.error(error);
       alert("Error updating teacher.");
     }
   };
+  
 
   if (loading) return <p className="p-6 text-center">Loading...</p>;
   if (!teacher) return <p className="p-6 text-center">Teacher not found</p>;
@@ -114,11 +126,15 @@ const TeacherProfilePage: React.FC<{ teacherId: number }> = ({ teacherId }) => {
           {/* Left Column: Profile + Files */}
           <div className="md:col-span-1 flex flex-col gap-6 h-full">
             <div className="p-6 bg-gray-50 dark:bg-gray-800 flex flex-col items-center justify-between rounded-lg shadow-sm h-64">
-              <img
+             <img
                 className="w-24 h-24 rounded-full object-cover mb-2"
-                src={teacher.profilePicture || "/blank-male.jpg"}
+                src={
+                  previewImage ||
+                  (teacher.profilePicture ? `${IMAGE_BASE_URL}${teacher.profilePicture}` : "/blank-male.jpg")
+                }
                 alt="Profile"
               />
+
               <h5 className="text-lg font-bold text-gray-900 dark:text-white text-center">
                 {teacher.firstName} {teacher.lastName}
               </h5>
@@ -234,6 +250,18 @@ const TeacherProfilePage: React.FC<{ teacherId: number }> = ({ teacherId }) => {
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
             <h5 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Update Teacher Info</h5>
             <div className="flex flex-col gap-4">
+
+              {/* Profile Picture Upload */}
+              <div>
+                <label className="block text-gray-700 dark:text-gray-300 mb-1">Profile Picture</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="w-full text-gray-900 dark:text-white"
+                />
+              </div>
+
               <div>
                 <label className="block text-gray-700 dark:text-gray-300 mb-1">Email</label>
                 <input
