@@ -8,6 +8,13 @@ export interface School {
   district: string;
 }
 
+export type TransferStatus =
+  | "pending"
+  | "headteacher_approved"
+  | "headteacher_rejected"
+  | "approved"
+  | "rejected";
+
 // Define the Teacher interface
 export interface Teacher {
   id: number;
@@ -36,33 +43,38 @@ export interface Teacher {
 // Transfer response interface
 export interface TransferResponse {
   id: number;
-  status: string;
+  status: TransferStatus;
   createdAt: string;
   updatedAt: string;
   teacherId: number;
   fromSchoolId: number | null;
   toSchoolId: number | null;
   teacher: Teacher;
-  fromSchool: any;
-  toSchool: any;
+  fromSchool: School | null;
+  toSchool: School | null;
 }
 
 // Fetch all transfers
-export const getTransfers = (token: string | null): Promise<TransferResponse[]> =>
-  apiClient<TransferResponse[]>("http://localhost:4000/api/transfers", {}, token).then(
-    (data) =>
-      data.map((t) => ({
-        ...t,
-        teacher: {
-          ...t.teacher,
-          experience:
-            typeof t.teacher.experience === "string"
-              ? JSON.parse(t.teacher.experience)
-              : Array.isArray(t.teacher.experience)
-              ? t.teacher.experience
-              : [],
-        },
-      }))
+export const getTransfers = (
+  token: string | null
+): Promise<TransferResponse[]> =>
+  apiClient<TransferResponse[]>(
+    "http://localhost:4000/api/transfers",
+    {},
+    token
+  ).then((data) =>
+    data.map((t) => ({
+      ...t,
+      teacher: {
+        ...t.teacher,
+        experience:
+          typeof t.teacher.experience === "string"
+            ? JSON.parse(t.teacher.experience)
+            : Array.isArray(t.teacher.experience)
+            ? t.teacher.experience
+            : [],
+      },
+    }))
   );
 
 // Submit a new transfer
@@ -82,14 +94,21 @@ export const submitTransfer = (
   );
 
 // Fetch transfer by ID
-export const fetchTransferById = (id: string, token: string | null): Promise<TransferResponse> =>
-  apiClient<TransferResponse>(`http://localhost:4000/api/transfers/${id}`, {}, token);
+export const fetchTransferById = (
+  id: string,
+  token: string | null
+): Promise<TransferResponse> =>
+  apiClient<TransferResponse>(
+    `http://localhost:4000/api/transfers/${id}`,
+    {},
+    token
+  );
 
-// Update transfer status
+// ✅ Update transfer status (fixed to support all enums)
 export const updateTransferStatus = (
   id: number,
-  status: "approved" | "rejected",
-  reason?: string,
+  status: TransferStatus,
+  reason: string = "",
   token: string | null = null
 ) =>
   apiClient(
