@@ -78,75 +78,97 @@ const TeachersTable = () => {
 
   // ===== Handle add teacher =====
   const handleAddTeacher = async () => {
-    // Validate required fields
-    if (!newTeacher.teacherData.firstName || !newTeacher.teacherData.lastName) {
-      Swal.fire("Error", "First Name and Last Name are required", "error");
+  // Validate required fields
+  if (!newTeacher.teacherData.firstName || !newTeacher.teacherData.lastName) {
+    Swal.fire("Error", "First Name and Last Name are required", "error");
+    return;
+  }
+
+  setLoading(true);
+
+  Swal.fire({
+    title: "Saving Teacher...",
+    text: "Please wait",
+    allowOutsideClick: false,
+    didOpen: () => Swal.showLoading(),
+  });
+
+  try {
+    // Prepare JSON payload
+    const teacherDataPayload = {
+      ...newTeacher.teacherData,
+      // Convert File objects to their server path (or keep existing paths)
+      medicalCertificate:
+        typeof newTeacher.teacherData.medicalCertificate === "string"
+          ? newTeacher.teacherData.medicalCertificate
+          : "/uploads/teachers/docs/medical.pdf",
+      academicQualifications:
+        typeof newTeacher.teacherData.academicQualifications === "string"
+          ? newTeacher.teacherData.academicQualifications
+          : "/uploads/teachers/docs/academic.pdf",
+      professionalQualifications:
+        typeof newTeacher.teacherData.professionalQualifications === "string"
+          ? newTeacher.teacherData.professionalQualifications
+          : "/uploads/teachers/docs/professional.pdf",
+    };
+
+    const payload = {
+      role: newTeacher.role,
+      teacherData: teacherDataPayload,
+    };
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      router.push("/");
       return;
     }
 
-    setLoading(true);
-
-    Swal.fire({
-      title: "Saving Teacher...",
-      text: "Please wait",
-      allowOutsideClick: false,
-      didOpen: () => Swal.showLoading(),
+    // Send JSON request
+    const response = await fetch("http://localhost:4000/api/auth/register", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+        Accept: "application/json",
+      },
+      body: JSON.stringify(payload),
     });
 
-    try {
-      const formData = new FormData();
+    const saved = await response.json();
 
-      // Add role
-      formData.append("role", newTeacher.role);
-
-      // Copy teacherData
-      const teacherDataPayload: any = { ...newTeacher.teacherData };
-
-      // Append files and remove from JSON
-      ["medicalCertificate", "academicQualifications", "professionalQualifications"].forEach((field) => {
-        const file = teacherDataPayload[field];
-        if (file instanceof File) {
-          formData.append(field, file, file.name);
-          delete teacherDataPayload[field];
-        }
-      });
-
-      // Append remaining teacherData as JSON
-      formData.append("teacherData", JSON.stringify(teacherDataPayload));
-
-      const saved = await addTeacher(formData);
-
-      setTeachers([...teachers, saved]);
-
-      // Reset form
-      setNewTeacher({
-        role: "teacher",
-        teacherData: Object.fromEntries(
-          Object.keys(newTeacher.teacherData).map((key) => [
-            key,
-            ["medicalCertificate", "academicQualifications", "professionalQualifications"].includes(key)
-              ? null
-              : "",
-          ])
-        ),
-      });
-
-      setIsModalOpen(false);
-
-      Swal.fire({
-        icon: "success",
-        title: "Success",
-        text: "Teacher added successfully 🎉",
-      });
-    } catch (err: any) {
-      console.error("Error saving teacher:", err);
-      const errorMessage =
-        err?.response?.data?.message || err?.message || "Something went wrong while saving teacher.";
-      Swal.fire({ icon: "error", title: "Error", text: errorMessage });
-    } finally {
-      setLoading(false);
+    if (!response.ok) {
+      throw new Error(saved.message || "Failed to save teacher");
     }
-  };
+
+    setTeachers([...teachers, saved]);
+
+    // Reset form
+    setNewTeacher({
+      role: "teacher",
+      teacherData: Object.fromEntries(
+        Object.keys(newTeacher.teacherData).map((key) => [
+          key,
+          ["medicalCertificate", "academicQualifications", "professionalQualifications"].includes(key)
+            ? null
+            : "",
+        ])
+      ),
+    });
+
+    setIsModalOpen(false);
+
+    Swal.fire({
+      icon: "success",
+      title: "Success",
+      text: "Teacher added successfully 🎉",
+    });
+  } catch (err: any) {
+    Swal.fire({ icon: "error", title: "Error", text: err.message || "Something went wrong" });
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   // ===== Filtering & Pagination =====
   const filteredTeachers = teachers.filter((teacher: any) =>

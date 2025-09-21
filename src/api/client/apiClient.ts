@@ -1,4 +1,3 @@
-
 import Router from "next/router";
 
 export const apiClient = async <T>(
@@ -18,8 +17,19 @@ export const apiClient = async <T>(
   };
 
   const res = await fetch(url, { ...options, headers });
+
+  // Handle Unauthorized
   if (res.status === 401) {
     Router.push("/");
+    throw new Error("Unauthorized access");
+  }
+
+  // Handle Payload Too Large
+  if (res.status === 413) {
+    return Promise.reject({
+      status: 413,
+      message: "Payload too large. Please reduce file size or data.",
+    });
   }
 
   if (!res.ok) {

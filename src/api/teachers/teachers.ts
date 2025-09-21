@@ -35,19 +35,16 @@ export const getTeachers = (token: string | null): Promise<Teacher[]> => {
 };
 
 
-export const addTeacher = async (teacher: Teacher | FormData, token?: string | null): Promise<Teacher> => {
-  const isFormData = teacher instanceof FormData;
+export const addTeacher = async (formData: FormData, token?: string | null): Promise<Teacher> => {
   return apiClient<Teacher>(
     `${API_BASE_URL}/auth/register`,
     {
       method: "POST",
-      headers: isFormData ? {} : { "Content-Type": "application/json" },
-      body: isFormData ? teacher : JSON.stringify(teacher),
+      body: formData,
     },
     token
   );
 };
-
 export const getTeacherById = (id: string, token: string | null): Promise<Teacher> => {
   return apiClient<Teacher>(`${API_BASE_URL}/teachers/${id}`, {}, token);
 };
