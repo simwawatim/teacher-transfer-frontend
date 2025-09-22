@@ -5,6 +5,22 @@ import { getTeachers, addTeacher, Teacher } from "../../api/teachers/teachers";
 import { getSchools } from "../../api/school/schools"
 import router from "next/router";
 
+
+const formatNRCInput = (value: string) => {
+  // Remove all non-digits
+  const digits = value.replace(/\D/g, "");
+
+  let part1 = digits.slice(0, 6);   // first 6 digits
+  let part2 = digits.slice(6, 8);   // next 2 digits
+  let part3 = digits.slice(8, 9);   // last digit
+
+  let formatted = part1;
+  if (part2) formatted += "/" + part2;
+  if (part3) formatted += "/" + part3;
+
+  return formatted;
+};
+
 const TeachersTable = () => {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [schools, setSchools] = useState<any[]>([]);
@@ -296,21 +312,25 @@ const TeachersTable = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {/* Text Inputs */}
               {["firstName","lastName","email","nrc","tsNo","address"].map((f) => (
-                <div key={f} className="flex flex-col">
-                  <label className="mb-1 text-gray-300">{f.charAt(0).toUpperCase() + f.slice(1)}</label>
-                  <input
-                    type="text"
-                    value={newTeacher.teacherData[f]}
-                    onChange={(e) =>
-                      setNewTeacher({
-                        ...newTeacher,
-                        teacherData: { ...newTeacher.teacherData, [f]: e.target.value },
-                      })
-                    }
-                    className="px-3 py-2 border border-gray-700 rounded bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-              ))}
+              <div key={f} className="flex flex-col">
+                <label className="mb-1 text-gray-300">{f.charAt(0).toUpperCase() + f.slice(1)}</label>
+                <input
+                  type="text"
+                  value={newTeacher.teacherData[f]}
+                  onChange={(e) => {
+                    const value = f === "nrc" ? formatNRCInput(e.target.value) : e.target.value;
+                    setNewTeacher({
+                      ...newTeacher,
+                      teacherData: { ...newTeacher.teacherData, [f]: value },
+                    });
+                  }}
+                  maxLength={f === "nrc" ? 11 : undefined} // 6+2+1 + 2 slashes = 11
+                  placeholder={f === "nrc" ? "123456/12/1" : ""}
+                  className="px-3 py-2 border border-gray-700 rounded bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+            ))}
+
 
               {/* Dropdowns */}
               {[
@@ -358,6 +378,8 @@ const TeachersTable = () => {
                   ))}
                 </select>
               </div>
+
+              
 
               {/* Subject */}
               <div className="flex flex-col">
