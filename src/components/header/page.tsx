@@ -65,7 +65,7 @@ const HeaderPage = () => {
         <div className="flex items-center space-x-4 relative" ref={dropdownRef}>
           {/* Notification Dropdown */}
           <div className="relative">
-            <button
+            {/* <button
               onClick={() => setOpen(!open)}
               className="relative p-2 rounded-full hover:bg-gray-700"
             >
@@ -75,21 +75,21 @@ const HeaderPage = () => {
                   {unreadCount}
                 </span>
               )}
-            </button>
+            </button> */}
 
-            {open && (
+            {/* {open && (
               <div className="absolute right-0 mt-2 w-96 bg-gray-900 rounded-xl shadow-lg z-50">
                 <div className="p-3 font-semibold text-white-700 border-b">
                   Notifications
                 </div>
 
                 {/* Scrollable notification list */}
-                <div className="max-h-80 overflow-y-auto">
+                {/* <div className="max-h-80 overflow-y-auto">
                   <NotificationComp limit={visibleCount} />
-                </div>
+                </div> */}
 
                 {/* See More button */}
-                <div className="p-3 border-t flex justify-center">
+                {/* <div className="p-3 border-t flex justify-center">
                   <button
                     onClick={() => setVisibleCount((prev) => prev + 3)}
                     className="px-4 py-1.5 text-sm font-medium text-white-600 bg-indigo-600 rounded-full hover:bg-blue-100 transition-colors"
@@ -97,14 +97,14 @@ const HeaderPage = () => {
                     See more
                   </button>
                 </div>
-              </div>
-            )}
+              </div> */}
+            
           </div>
 
           {/* Settings Icon */}
-          <Link href="/settings" className="p-2 rounded-full hover:bg-gray-700">
+          {/* <Link href="/settings" className="p-2 rounded-full hover:bg-gray-700">
             <Cog6ToothIcon className="h-6 w-6 text-white" />
-          </Link>
+          </Link> */}
 
           {/* Profile */}
           <Link href="/profile">
