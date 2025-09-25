@@ -52,7 +52,7 @@ const HeaderPage = () => {
     <header className="flex shadow-lg py-4 px-4 sm:px-10 bg-gray-900 min-h-[70px] tracking-wide relative z-50">
       <div className="flex items-center justify-between w-full">
         {/* Left Side: Logo + Title */}
-        <Link href="/" className="flex items-center space-x-2">
+        <Link href="/home" className="flex items-center space-x-2">
           <img
             className="h-12 w-auto object-contain rounded-md shadow-sm"
             src="/logo.png"
