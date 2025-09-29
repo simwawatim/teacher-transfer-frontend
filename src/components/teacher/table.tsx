@@ -1,18 +1,16 @@
+// TeachersTable.tsx
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import Swal from "sweetalert2";
-import { getTeachers, addTeacher, Teacher } from "../../api/teachers/teachers";
-import { getSchools } from "../../api/school/schools"
+import { getTeachers, Teacher } from "../../api/teachers/teachers";
+import { getSchools } from "../../api/school/schools";
 import router from "next/router";
 
-
 const formatNRCInput = (value: string) => {
-  // Remove all non-digits
   const digits = value.replace(/\D/g, "");
-
-  let part1 = digits.slice(0, 6);   // first 6 digits
-  let part2 = digits.slice(6, 8);   // next 2 digits
-  let part3 = digits.slice(8, 9);   // last digit
+  let part1 = digits.slice(0, 6);
+  let part2 = digits.slice(6, 8);
+  let part3 = digits.slice(8, 9);
 
   let formatted = part1;
   if (part2) formatted += "/" + part2;
@@ -39,161 +37,107 @@ const TeachersTable = () => {
       tsNo: "",
       address: "",
       maritalStatus: "",
-      medicalCertificate: null,
-      academicQualifications: null,
-      professionalQualifications: null,
       currentSchoolType: "",
       currentSchoolId: "",
       currentPosition: "",
       subjectSpecialization: "",
     },
+    medicalCertificate: null as File | null,
+    academicQualifications: null as File | null,
+    professionalQualifications: null as File | null,
   });
 
   const itemsPerPage = 10;
 
   useEffect(() => {
-      const token = localStorage.getItem("token");
+    const token = localStorage.getItem("token");
+    if (!token) router.push("/");
 
-      if (!token) {
-        router.push("/");
-        return;
+    const fetchTeachers = async () => {
+      try {
+        const data = await getTeachers(token!);
+        setTeachers(data);
+      } catch (err: any) {
+        console.error("Error fetching teachers:", err);
+        Swal.fire("Error", "Failed to fetch teachers.", "error");
       }
+    };
 
-      const fetchTeachers = async () => {
-        try {
-          const data = await getTeachers(token);
-          setTeachers(data);
-        } catch (err: any) {
-          console.error("Error fetching teachers:", err);
-          Swal.fire("Error", "Failed to fetch teachers.", "error");
-        }
-      };
+    const fetchSchools = async () => {
+      try {
+        const data = await getSchools(token!);
+        setSchools(data);
+      } catch (err: any) {
+        console.error("Error fetching schools:", err);
+        Swal.fire("Error", "Failed to fetch schools.", "error");
+      }
+    };
 
-      const fetchSchools = async () => {
-        try {
-          const data = await getSchools(token);
-          setSchools(data);
-        } catch (err: any) {
-          console.error("Error fetching schools:", err);
-          Swal.fire("Error", "Failed to fetch schools.", "error");
-        }
-      };
-
-      fetchTeachers();
-      fetchSchools();
-    }, []);
-
+    fetchTeachers();
+    fetchSchools();
+  }, []);
 
   // ===== Handle file change =====
   const handleFileChange = (field: string, file: File | null) => {
-    setNewTeacher({
-      ...newTeacher,
-      teacherData: { ...newTeacher.teacherData, [field]: file },
-    });
+    setNewTeacher({ ...newTeacher, [field]: file });
   };
 
   // ===== Handle add teacher =====
-  const handleAddTeacher = async () => {
-  // Validate required fields
-  if (!newTeacher.teacherData.firstName || !newTeacher.teacherData.lastName) {
-    Swal.fire("Error", "First Name and Last Name are required", "error");
-    return;
-  }
-
+const handleAddTeacher = async () => {
   setLoading(true);
-
-  Swal.fire({
-    title: "Saving Teacher...",
-    text: "Please wait",
-    allowOutsideClick: false,
-    didOpen: () => Swal.showLoading(),
-  });
-
   try {
-    // Prepare JSON payload
-    const teacherDataPayload = {
-      ...newTeacher.teacherData,
-      // Convert File objects to their server path (or keep existing paths)
-      medicalCertificate:
-        typeof newTeacher.teacherData.medicalCertificate === "string"
-          ? newTeacher.teacherData.medicalCertificate
-          : "/uploads/teachers/docs/medical.pdf",
-      academicQualifications:
-        typeof newTeacher.teacherData.academicQualifications === "string"
-          ? newTeacher.teacherData.academicQualifications
-          : "/uploads/teachers/docs/academic.pdf",
-      professionalQualifications:
-        typeof newTeacher.teacherData.professionalQualifications === "string"
-          ? newTeacher.teacherData.professionalQualifications
-          : "/uploads/teachers/docs/professional.pdf",
-    };
+    const formData = new FormData();
 
-    const payload = {
-      role: newTeacher.role,
-      teacherData: teacherDataPayload,
-    };
+    formData.append("role", newTeacher.role);
 
-    const token = localStorage.getItem("token");
-    if (!token) {
-      router.push("/");
-      return;
+    // Attach files ONLY if they exist
+    if (newTeacher.medicalCertificate) {
+      formData.append("medicalCertificate", newTeacher.medicalCertificate);
+    }
+    if (newTeacher.academicQualifications) {
+      formData.append("academicQualifications", newTeacher.academicQualifications);
+    }
+    if (newTeacher.professionalQualifications) {
+      formData.append("professionalQualifications", newTeacher.professionalQualifications);
     }
 
-    // Send JSON request
+    // Attach teacherData fields (all strings)
+    Object.entries(newTeacher.teacherData).forEach(([key, value]) => {
+      if (value !== null && value !== undefined) {
+        formData.append(`teacherData[${key}]`, String(value));
+      }
+    });
+
+    const token = localStorage.getItem("token");
     const response = await fetch("http://localhost:4000/api/auth/register", {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`,
-        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+        // NO Content-Type here
       },
-      body: JSON.stringify(payload),
+      body: formData
     });
 
     const saved = await response.json();
+    if (!response.ok) throw new Error(saved.message || "Failed to save teacher");
 
-    if (!response.ok) {
-      throw new Error(saved.message || "Failed to save teacher");
-    }
-
-    setTeachers([...teachers, saved]);
-
-    // Reset form
-    setNewTeacher({
-      role: "teacher",
-      teacherData: Object.fromEntries(
-        Object.keys(newTeacher.teacherData).map((key) => [
-          key,
-          ["medicalCertificate", "academicQualifications", "professionalQualifications"].includes(key)
-            ? null
-            : "",
-        ])
-      ),
-    });
-
+    Swal.fire("Success", "Teacher added successfully", "success");
     setIsModalOpen(false);
+    setLoading(false);
 
-    Swal.fire({
-      icon: "success",
-      title: "Success",
-      text: "Teacher added successfully 🎉",
-    });
   } catch (err: any) {
-    Swal.fire({ icon: "error", title: "Error", text: err.message || "Something went wrong" });
-  } finally {
+    console.error(err);
+    Swal.fire("Error", err.message || "Failed to add teacher", "error");
     setLoading(false);
   }
 };
 
 
-  // ===== Filtering & Pagination =====
-  const filteredTeachers = teachers.filter((teacher: any) =>
-    Object.values(teacher)
-      .join(" ")
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase())
-  );
 
+  // ===== Pagination & Filtering (unchanged) =====
+  const filteredTeachers = teachers.filter((teacher: any) =>
+    Object.values(teacher).join(" ").toLowerCase().includes(searchTerm.toLowerCase())
+  );
   const indexOfLast = currentPage * itemsPerPage;
   const indexOfFirst = indexOfLast - itemsPerPage;
   const currentTeachers = filteredTeachers.slice(indexOfFirst, indexOfLast);
@@ -213,17 +157,14 @@ const TeachersTable = () => {
     )
   );
 
+
   return (
     <div className="p-6">
       {/* Header */}
       <div className="flex justify-between items-center mb-4">
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-        >
+        <button onClick={() => setIsModalOpen(true)} className="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-700 transition-colors">
           + Add Teacher
         </button>
-
         <input
           type="text"
           placeholder="Search teachers..."
@@ -244,16 +185,11 @@ const TeachersTable = () => {
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead className="bg-gray-100 dark:bg-gray-800">
             <tr>
-              {["Name", "NRC No.", "TS No.", "Current School", "Position", "Subject", "Action"].map(
-                (header) => (
-                  <th
-                    key={header}
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider"
-                  >
-                    {header}
-                  </th>
-                )
-              )}
+              {["Name", "NRC No.", "TS No.", "Current School", "Position", "Subject", "Action"].map((header) => (
+                <th key={header} className="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                  {header}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
@@ -265,12 +201,10 @@ const TeachersTable = () => {
                 <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">{teacher.nrc}</td>
                 <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">{teacher.tsNo}</td>
                 <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
-                  {teacher.currentSchoolName ? teacher.currentSchool.name : "-"}
+                  {teacher.currentSchool?.name || "-"}
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">{teacher.currentPosition}</td>
-                <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
-                  {teacher.subjectSpecialization}
-                </td>
+                <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">{teacher.subjectSpecialization}</td>
                 <td className="px-6 py-4 text-sm text-indigo-600 hover:text-indigo-900">
                   <Link href={`/teachers/${teacher.id}`}>View</Link>
                 </td>
@@ -286,18 +220,10 @@ const TeachersTable = () => {
           Page {currentPage} of {totalPages}
         </span>
         <div className="flex gap-2">
-          <button
-            className="px-3 py-1 border rounded disabled:opacity-50"
-            disabled={currentPage === 1}
-            onClick={() => setCurrentPage((prev) => prev - 1)}
-          >
+          <button className="px-3 py-1 border rounded disabled:opacity-50" disabled={currentPage === 1} onClick={() => setCurrentPage((p) => p - 1)}>
             Prev
           </button>
-          <button
-            className="px-3 py-1 border rounded disabled:opacity-50"
-            disabled={currentPage === totalPages}
-            onClick={() => setCurrentPage((prev) => prev + 1)}
-          >
+          <button className="px-3 py-1 border rounded disabled:opacity-50" disabled={currentPage === totalPages} onClick={() => setCurrentPage((p) => p + 1)}>
             Next
           </button>
         </div>
@@ -308,29 +234,23 @@ const TeachersTable = () => {
         <div className="fixed inset-0 bg-opacity-50 flex justify-center items-center z-50">
           <div className="bg-gray-900 rounded-lg shadow-lg p-6 w-full max-w-4xl overflow-y-auto max-h-[90vh]">
             <h2 className="text-2xl font-bold mb-6 text-white">Add New Teacher</h2>
-
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {/* Text Inputs */}
               {["firstName","lastName","email","nrc","tsNo","address"].map((f) => (
-              <div key={f} className="flex flex-col">
-                <label className="mb-1 text-gray-300">{f.charAt(0).toUpperCase() + f.slice(1)}</label>
-                <input
-                  type="text"
-                  value={newTeacher.teacherData[f]}
-                  onChange={(e) => {
-                    const value = f === "nrc" ? formatNRCInput(e.target.value) : e.target.value;
-                    setNewTeacher({
-                      ...newTeacher,
-                      teacherData: { ...newTeacher.teacherData, [f]: value },
-                    });
-                  }}
-                  maxLength={f === "nrc" ? 11 : undefined} // 6+2+1 + 2 slashes = 11
-                  placeholder={f === "nrc" ? "123456/12/1" : ""}
-                  className="px-3 py-2 border border-gray-700 rounded bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-            ))}
-
+                <div key={f} className="flex flex-col">
+                  <label className="mb-1 text-gray-300">{f.charAt(0).toUpperCase() + f.slice(1)}</label>
+                  <input
+                    type="text"
+                    value={newTeacher.teacherData[f]}
+                    onChange={(e) => {
+                      const value = f === "nrc" ? formatNRCInput(e.target.value) : e.target.value;
+                      setNewTeacher({ ...newTeacher, teacherData: { ...newTeacher.teacherData, [f]: value } });
+                    }}
+                    maxLength={f === "nrc" ? 11 : undefined}
+                    placeholder={f === "nrc" ? "123456/12/1" : ""}
+                    className="px-3 py-2 border border-gray-700 rounded bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              ))}
 
               {/* Dropdowns */}
               {[
@@ -343,18 +263,11 @@ const TeachersTable = () => {
                   <label className="mb-1 text-gray-300">{field.replace(/([A-Z])/g, " $1")}</label>
                   <select
                     value={newTeacher.teacherData[field] || ""}
-                    onChange={(e) =>
-                      setNewTeacher({
-                        ...newTeacher,
-                        teacherData: { ...newTeacher.teacherData, [field]: e.target.value },
-                      })
-                    }
+                    onChange={(e) => setNewTeacher({ ...newTeacher, teacherData: { ...newTeacher.teacherData, [field]: e.target.value } })}
                     className="px-3 py-2 border border-gray-700 rounded bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   >
                     <option value="">Select {field.replace(/([A-Z])/g, " $1")}</option>
-                    {options.map((opt) => (
-                      <option key={opt} value={opt}>{opt}</option>
-                    ))}
+                    {options.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
                   </select>
                 </div>
               ))}
@@ -364,41 +277,24 @@ const TeachersTable = () => {
                 <label className="mb-1 text-gray-300">Current School</label>
                 <select
                   value={newTeacher.teacherData.currentSchoolId || ""}
-                  onChange={(e) =>
-                    setNewTeacher({
-                      ...newTeacher,
-                      teacherData: { ...newTeacher.teacherData, currentSchoolId: e.target.value },
-                    })
-                  }
+                  onChange={(e) => setNewTeacher({ ...newTeacher, teacherData: { ...newTeacher.teacherData, currentSchoolId: e.target.value } })}
                   className="px-3 py-2 border border-gray-700 rounded bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
                   <option value="">Select School</option>
-                  {schools.map((school) => (
-                    <option key={school.id} value={school.id}>{school.name}</option>
-                  ))}
+                  {schools.map((school) => <option key={school.id} value={school.id}>{school.name}</option>)}
                 </select>
               </div>
-
-              
 
               {/* Subject */}
               <div className="flex flex-col">
                 <label className="mb-1 text-gray-300">Subject Specialization</label>
                 <select
                   value={newTeacher.teacherData.subjectSpecialization || ""}
-                  onChange={(e) =>
-                    setNewTeacher({
-                      ...newTeacher,
-                      teacherData: { ...newTeacher.teacherData, subjectSpecialization: e.target.value },
-                    })
-                  }
+                  onChange={(e) => setNewTeacher({ ...newTeacher, teacherData: { ...newTeacher.teacherData, subjectSpecialization: e.target.value } })}
                   className="px-3 py-2 border border-gray-700 rounded bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
                   <option value="">Select Subject</option>
-                  {[
-                    "Mathematics","English","Science","History","Geography","Physical Education",
-                    "Biology","Chemistry","Physics","Computer Studies",
-                  ].map((sub) => (
+                  {["Mathematics","English","Science","History","Geography","Physical Education","Biology","Chemistry","Physics","Computer Studies"].map((sub) => (
                     <option key={sub} value={sub}>{sub}</option>
                   ))}
                 </select>
@@ -412,9 +308,7 @@ const TeachersTable = () => {
               ].map(({ field, label }) => (
                 <div key={field} className="flex flex-col">
                   <label className="mb-1 text-gray-300">{label}</label>
-                  <input
-                    type="file"
-                    onChange={(e) => handleFileChange(field, e.target.files?.[0] ?? null)}
+                  <input type="file" onChange={(e) => handleFileChange(field, e.target.files?.[0] ?? null)}
                     className="px-3 py-2 border border-gray-700 rounded bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
@@ -423,18 +317,10 @@ const TeachersTable = () => {
 
             {/* Buttons */}
             <div className="flex justify-end gap-2 mt-6">
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-700 transition-colors"
-                disabled={loading}
-              >
+              <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-700 transition-colors" disabled={loading}>
                 Cancel
               </button>
-              <button
-                onClick={handleAddTeacher}
-                disabled={loading}
-                className="px-4 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-700 transition-colors"
-              >
+              <button onClick={handleAddTeacher} disabled={loading} className="px-4 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-700 transition-colors">
                 {loading ? "Saving..." : "Save"}
               </button>
             </div>
