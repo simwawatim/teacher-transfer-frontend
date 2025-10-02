@@ -88,9 +88,16 @@ const handleAddTeacher = async () => {
   try {
     const formData = new FormData();
 
-    formData.append("role", newTeacher.role);
+    const roleMap: Record<string, string> = {
+      Teacher: "teacher",
+      "Head Teacher": "headteacher",
+    };
 
-    // Attach files ONLY if they exist
+    if (newTeacher.teacherData.currentPosition) {
+      const mappedRole = roleMap[newTeacher.teacherData.currentPosition] || "teacher";
+      formData.append("role", mappedRole);
+    }
+
     if (newTeacher.medicalCertificate) {
       formData.append("medicalCertificate", newTeacher.medicalCertificate);
     }
@@ -257,7 +264,7 @@ const handleAddTeacher = async () => {
                 { field: "maritalStatus", options: ["Single", "Married", "Divorced", "Widowed"] },
                 { field: "professionalQualifications", options: ["Primary Diploma", "Secondary Diploma", "Primary Degree", "Secondary Degree"] },
                 { field: "currentSchoolType", options: ["Community", "Primary", "Secondary"] },
-                { field: "currentPosition", options: ["Class Teacher", "Subject Teacher", "Senior Teacher", "HOD", "Deputy Head", "Head Teacher"] },
+                { field: "currentPosition", options: ["Teacher", "Head Teacher"] },
               ].map(({ field, options }) => (
                 <div key={field} className="flex flex-col">
                   <label className="mb-1 text-gray-300">{field.replace(/([A-Z])/g, " $1")}</label>

@@ -68,5 +68,5 @@ export const updateTeacher = (id: number, data: FormData, token: string | null):
 
 export const getProfilePictureUrl = (path: string | null | undefined) => {
   if (!path) return "/blank-male.jpg";
-  return `${IMAGE_BASE_URL}${path}`;
+  return `${IMAGE_BASE_URL}/${path}`;
 };

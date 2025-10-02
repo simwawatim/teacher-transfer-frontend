@@ -7,7 +7,7 @@ const ProfilePage = () => {
 
   const currentUser = getCurrentUser();
   console.log(currentUser);
-  const teacherId = currentUser?.id ?? 0;
+    const teacherId = currentUser?.teacherProfileId ?? 0;
   return (
     <div className="flex flex-col h-screen">
       {/* Top Header */}

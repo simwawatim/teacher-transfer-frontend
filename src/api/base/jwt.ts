@@ -2,6 +2,7 @@ export interface JwtPayload {
   id: number;
   username: string;
   role: string;
+  teacherProfileId?: number;
   iat: number;
   exp: number;
 }

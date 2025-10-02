@@ -1,16 +1,31 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import { 
-  HiMail, HiLocationMarker, HiUser, HiOfficeBuilding, 
-  HiAcademicCap, HiDocumentText, HiClipboardList 
-} from "react-icons/hi";
+import { HiClipboardList } from "react-icons/hi";
 import { getTeacherById, Teacher, getProfilePictureUrl } from "../../api/teachers/teachers";
 import { IMAGE_BASE_URL } from "../../api/base/base";
+import dynamic from "next/dynamic";
+
+// Dynamically import react-pdf components (client-side only)
+const PDFDocument = dynamic(() => import("react-pdf").then(mod => mod.Document), { ssr: false });
+const PDFPage = dynamic(() => import("react-pdf").then(mod => mod.Page), { ssr: false });
 
 interface TeacherViewProps {
   teacherId?: string;
 }
+
+type FileItem = {
+  file: string | null | undefined;
+  label: string;
+};
+
+type ExperienceItem = {
+  role?: string;
+  position?: string;
+  institution?: string;
+  school?: string;
+  details?: string;
+};
 
 const TeacherViewLayout: React.FC<TeacherViewProps> = ({ teacherId }) => {
   const router = useRouter();
@@ -18,12 +33,18 @@ const TeacherViewLayout: React.FC<TeacherViewProps> = ({ teacherId }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [modalImage, setModalImage] = useState<string | null>(null);
+  const [modalPdf, setModalPdf] = useState<string | null>(null);
+
+  const isImage = (filename: string) => /\.(jpg|jpeg|png|gif|webp)$/i.test(filename);
+  const isPdf = (filename: string) => /\.pdf$/i.test(filename);
+
+  // Fetch teacher data
   useEffect(() => {
     const id = teacherId || (router.query.id as string);
     if (!id) return;
 
     const token = localStorage.getItem("token");
-
     if (!token) {
       router.push("/");
       return;
@@ -60,6 +81,12 @@ const TeacherViewLayout: React.FC<TeacherViewProps> = ({ teacherId }) => {
   if (!teacher) return <p className="text-center py-10">Teacher not found.</p>;
 
   const iconColor = "text-indigo-500";
+
+  const files: FileItem[] = [
+    { file: teacher.medicalCertificate, label: "Medical" },
+    { file: teacher.academicQualifications, label: "Academic" },
+    { file: teacher.professionalQualifications, label: "Professional" },
+  ];
 
   return (
     <section className="py-8 bg-white dark:bg-gray-900 min-h-screen w-full">
@@ -112,51 +139,74 @@ const TeacherViewLayout: React.FC<TeacherViewProps> = ({ teacherId }) => {
           </div>
         </div>
 
-        {/* Second Row: Files + Experience */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 w-full">
+        {/* Second Row: Files (bigger) + Experience (smaller) */}
+        <div className="grid grid-cols-3 md:grid-cols-3 gap-6 w-full">
           {/* Files */}
-          <div className="md:col-span-1 p-6 bg-gray-50 dark:bg-gray-800 rounded-lg shadow-sm h-64">
+          <div className="md:col-span-2 p-6 bg-gray-50 dark:bg-gray-800 rounded-lg shadow-sm h-96 overflow-auto">
             <div className="grid grid-cols-2 gap-4 h-full">
-              {teacher.medicalCertificate && (
-                <a
-                  href={`${IMAGE_BASE_URL}${teacher.medicalCertificate}`}
-                  target="_blank"
-                  className="rounded-lg bg-white dark:bg-gray-700 flex items-center justify-center shadow-sm"
-                >
-                  Medical
-                </a>
-              )}
-              {teacher.academicQualifications && (
-                <a
-                  href={`${IMAGE_BASE_URL}${teacher.academicQualifications}`}
-                  target="_blank"
-                  className="rounded-lg bg-white dark:bg-gray-700 flex items-center justify-center shadow-sm"
-                >
-                  Academic
-                </a>
-              )}
-              {teacher.professionalQualifications && (
-                <a
-                  href={`${IMAGE_BASE_URL}${teacher.professionalQualifications}`}
-                  target="_blank"
-                  className="col-span-2 rounded-lg bg-white dark:bg-gray-700 flex items-center justify-center shadow-sm"
-                >
-                  Professional
-                </a>
-              )}
+              {files.map((item: FileItem, idx: number) => {
+                if (!item.file) return null;
+                const fileUrl = `${IMAGE_BASE_URL}/${item.file}`;
+
+                return (
+                  <div key={idx} className={`flex flex-col items-center ${item.label === "Professional" ? "col-span-2" : ""}`}>
+                    {isImage(item.file) ? (
+                      <a onClick={(e) => { e.preventDefault(); setModalImage(fileUrl); }} className="cursor-pointer w-full">
+                        <img src={fileUrl} alt={item.label} className="rounded-lg object-cover shadow-sm w-full" />
+                      </a>
+                    ) : isPdf(item.file) ? (
+                      <div className="cursor-pointer rounded-lg bg-white dark:bg-gray-700 flex flex-col items-center justify-center shadow-sm p-2 w-full">
+                        <embed src={fileUrl} width="100%" height="100px" style={{ border: "1px solid #ccc", borderRadius: "8px" }} />
+                        <button className="mt-2 px-2 py-1 bg-indigo-500 text-white rounded text-sm" onClick={() => window.open(fileUrl, "_blank")}>Open Full</button>
+                      </div>
+                    ) : (
+                      <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="rounded-lg bg-white dark:bg-gray-700 flex items-center justify-center shadow-sm w-full">{item.label}</a>
+                    )}
+                    {/* Label under file */}
+                    <span className="mt-1 text-sm text-gray-500 dark:text-gray-400">{item.label}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
           {/* Experience */}
-          <div className="md:col-span-3 p-6 bg-gray-50 dark:bg-gray-800 rounded-lg shadow-sm h-auto">
+          <div className="md:col-span-1 p-6 bg-gray-50 dark:bg-gray-800 rounded-lg shadow-sm h-auto">
             <h5 className="text-xl font-bold mb-4 text-gray-900 dark:text-white flex items-center gap-2">
               <HiClipboardList className={iconColor} /> Experience
             </h5>
-            
+            {teacher.experience && teacher.experience.length > 0 ? (
+              <ul className="divide-y divide-gray-200 dark:divide-gray-700 max-h-96 overflow-auto">
+                {teacher.experience.slice(0, 12).map((exp: ExperienceItem, idx: number) => (
+                  <li key={idx} className="py-2 flex justify-between">
+                    <span className="text-gray-500 dark:text-gray-400">{exp.role || exp.position || `Experience ${idx + 1}`}</span>
+                    <span className="font-medium text-gray-900 dark:text-white">{exp.institution || exp.school || exp.details || ""}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-gray-500 dark:text-gray-400">No experience listed.</p>
+            )}
           </div>
         </div>
 
       </div>
+
+      {/* Modal for Images */}
+      {modalImage && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 cursor-pointer" onClick={() => setModalImage(null)}>
+          <img src={modalImage} className="max-h-[90vh] max-w-[90vw] rounded-lg shadow-lg" />
+        </div>
+      )}
+
+      {/* Modal for PDFs */}
+      {modalPdf && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 cursor-pointer" onClick={() => setModalPdf(null)}>
+          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg max-h-[90vh] max-w-[90vw] overflow-auto">
+            <PDFDocument file={modalPdf}><PDFPage pageNumber={1} /></PDFDocument>
+          </div>
+        </div>
+      )}
     </section>
   );
 };

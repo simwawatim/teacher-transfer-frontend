@@ -49,6 +49,7 @@ const TeacherProfilePage: React.FC<{ teacherId: number }> = ({ teacherId }) => {
   useEffect(() => {
     const fetchTeacher = async () => {
       const token = requireToken(router);
+      
       if (!token) return;
 
       try {
