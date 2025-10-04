@@ -5,6 +5,7 @@ import Swal from "sweetalert2";
 import { getTeachers, Teacher } from "../../api/teachers/teachers";
 import { getSchools } from "../../api/school/schools";
 import router from "next/router";
+import { getCurrentUser } from "@/api/base/jwt";
 
 const formatNRCInput = (value: string) => {
   const digits = value.replace(/\D/g, "");
@@ -26,6 +27,12 @@ const TeachersTable = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [role, setRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    const currentUser = getCurrentUser();
+    setRole(currentUser?.role ?? null);
+  }, []);
 
   const [newTeacher, setNewTeacher] = useState<any>({
     role: "teacher",
@@ -169,9 +176,11 @@ const handleAddTeacher = async () => {
     <div className="p-6">
       {/* Header */}
       <div className="flex justify-between items-center mb-4">
+         {(role === "admin") && (
         <button onClick={() => setIsModalOpen(true)} className="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-700 transition-colors">
           + Add Teacher
         </button>
+           )}
         <input
           type="text"
           placeholder="Search teachers..."

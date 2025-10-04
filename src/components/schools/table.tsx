@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { getSchools, addSchool, updateSchool, deleteSchool, School } from "../../api/school/schools";
 import { requireToken } from "../../api/base/token";
+import { getCurrentUser } from "@/api/base/jwt";
 import router from "next/router";
 
 const provinces = {
@@ -19,7 +20,12 @@ const SchoolsTable = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [editingSchool, setEditingSchool] = useState<School | null>(null);
+  const [role, setRole] = useState<string | null>(null);
 
+  useEffect(() => {
+    const currentUser = getCurrentUser();
+    setRole(currentUser?.role ?? null);
+  }, []);
   const itemsPerPage = 10;
 
   const fetchSchools = async () => {
@@ -115,12 +121,14 @@ const SchoolsTable = () => {
   return (
     <div className="relative overflow-x-auto shadow-md sm:rounded-lg p-4">
       <div className="flex justify-between items-center mb-4">
+          {(role === "admin") && (
         <button
           onClick={() => { setShowModal(true); setEditingSchool(null); setNewSchool({ name: "", code: "", district: "", province: "" }); }}
           className="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-blue-700"
         >
           + Add School
         </button>
+         )}
         <input
           type="text"
           placeholder="Search schools..."
@@ -148,7 +156,9 @@ const SchoolsTable = () => {
               <th className="px-6 py-3">Code</th>
               <th className="px-6 py-3">District</th>
               <th className="px-6 py-3">Province</th>
+                 {(role === "admin") && (
               <th className="px-6 py-3">Actions</th>
+                   )}
             </tr>
           </thead>
           <tbody>
@@ -163,6 +173,7 @@ const SchoolsTable = () => {
                 <td className="px-6 py-4">{school.code}</td>
                 <td className="px-6 py-4">{school.district}</td>
                 <td className="px-6 py-4">{school.province}</td>
+                  {(role === "admin") && (
                 <td className="px-6 py-4 flex gap-2">
                   <button
                     className="px-2 py-1 bg-yellow-400 rounded text-white hover:bg-yellow-500"
@@ -177,6 +188,7 @@ const SchoolsTable = () => {
                     Delete
                   </button>
                 </td>
+                    )}
               </tr>
             ))}
           </tbody>

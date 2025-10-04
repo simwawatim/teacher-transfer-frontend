@@ -36,7 +36,7 @@ const TransferTable = () => {
   const [submittingRequest, setSubmittingRequest] = useState(false);
   const currentUser = getCurrentUser();
   console.log(currentUser);
-  const teacherId = currentUser?.id ?? 0;
+  const teacherId = currentUser?.teacherProfileId ?? 0;
 
   const [transferRequest, setTransferRequest] = useState({
     
@@ -111,7 +111,7 @@ const TransferTable = () => {
       await submitTransfer(selectedTeacher.teacher.id, selectedTeacher.toSchoolId || 0, token);
       setTeachers((prev) =>
         prev.map((t) =>
-          t.id === selectedTeacher.id ? { ...t, status: actionData.status } : t
+          t.id === selectedTeacher.id ? { ...t, status: actionData.status as typeof t.status } : t
         )
       );
       setShowActionModal(false);
@@ -226,19 +226,25 @@ const TransferTable = () => {
                 <td className="px-6 py-4">{t.teacher.currentSchool ? t.teacher.currentSchool.name : "-"}</td>
                 <td className="px-6 py-4">  {t.toSchool ? t.toSchool.name : "-"}</td>
                 <td className="px-6 py-4">
-                  <button
-                    onClick={() => alert(`Status: ${t.status}`)}
-                    className={`px-2 py-1 rounded-full text-xs font-semibold focus:outline-none ${
-                      status === "approved"
-                        ? "bg-green-100 text-green-800"
-                        : status === "rejected"
-                        ? "bg-red-100 text-red-800"
-                        : "bg-yellow-100 text-yellow-800"
+                  <span
+                    className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium inset-ring ${
+                      t.status === "pending"
+                        ? "bg-gray-400/10 text-gray-400 inset-ring-gray-400/20"
+                        : t.status === "headteacher_approved"
+                        ? "bg-blue-400/10 text-blue-400 inset-ring-blue-400/30"
+                        : t.status === "headteacher_rejected"
+                        ? "bg-yellow-400/10 text-yellow-500 inset-ring-yellow-400/20"
+                        : t.status === "approved"
+                        ? "bg-green-400/10 text-green-400 inset-ring-green-500/20"
+                        : t.status === "rejected"
+                        ? "bg-red-400/10 text-red-400 inset-ring-red-400/20"
+                        : "bg-gray-400/10 text-gray-400 inset-ring-gray-400/20"
                     }`}
                   >
-                    {t.status || "Pending"}
-                  </button>
+                    {t.status.replace("_", " ").toUpperCase() || "PENDING"}
+                  </span>
                 </td>
+
 
                 <td className="px-6 py-4">{new Date(t.createdAt).toLocaleDateString()}</td>
                 <td className="px-6 py-4 text-sm text-indigo-600 hover:text-indigo-900">
