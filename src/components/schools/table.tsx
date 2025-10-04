@@ -201,14 +201,14 @@ const SchoolsTable = () => {
         </span>
         <div className="flex gap-2">
           <button
-            className="px-3 py-1 border rounded disabled:opacity-50"
+            className="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50"
             disabled={currentPage === 1}
             onClick={() => setCurrentPage((prev) => prev - 1)}
           >
             Prev
           </button>
           <button
-            className="px-3 py-1 border rounded disabled:opacity-50"
+            className="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50"
             disabled={currentPage === totalPages}
             onClick={() => setCurrentPage((prev) => prev + 1)}
           >

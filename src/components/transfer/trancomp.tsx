@@ -20,46 +20,44 @@ interface School {
   code?: string;
 }
 
-
 const TransferTable = () => {
   const [teachers, setTeachers] = useState<TransferResponse[]>([]);
   const [schools, setSchools] = useState<School[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showRequestModal, setShowRequestModal] = useState(false);
-  const [showActionModal, setShowActionModal] = useState(false);
   const [selectedTeacher, setSelectedTeacher] = useState<TransferResponse | null>(null);
   const [actionData, setActionData] = useState<ActionData>({ status: "Approved", reason: "" });
   const [searchQuery, setSearchQuery] = useState("");
-
   const [submittingAction, setSubmittingAction] = useState(false);
   const [submittingRequest, setSubmittingRequest] = useState(false);
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   const currentUser = getCurrentUser();
-  console.log(currentUser);
   const teacherId = currentUser?.teacherProfileId ?? 0;
 
   const [transferRequest, setTransferRequest] = useState({
-    
     teacherId: teacherId,
     toSchoolId: 0,
     reason: "",
   });
 
+  // Fetch transfers
   useEffect(() => {
-      const token = requireToken(router);
-      
-      if (!token) return;
+    const token = requireToken(router);
+    if (!token) return;
+
     const fetchTransfers = async () => {
       try {
         const data = await getTransfers(token);
         setTeachers(data);
       } catch (err: any) {
         let errorMsg = "Failed to load transfers";
-        if (err.response?.data?.message) {
-          errorMsg = err.response.data.message;
-        } else if (err.message) {
-          errorMsg = err.message;
-        }
+        if (err.response?.data?.message) errorMsg = err.response.data.message;
+        else if (err.message) errorMsg = err.message;
         setError(errorMsg);
       } finally {
         setLoading(false);
@@ -68,11 +66,10 @@ const TransferTable = () => {
     fetchTransfers();
   }, []);
 
-  // fetch schools
+  // Fetch schools
   useEffect(() => {
     const fetchSchools = async () => {
       const token = requireToken(router);
-
       if (!token) return;
       try {
         const data = await getSchools(token);
@@ -88,23 +85,18 @@ const TransferTable = () => {
   const openActionModal = (teacher: TransferResponse) => {
     setSelectedTeacher(teacher);
     setActionData({ status: teacher.status || "Pending", reason: "" });
-    setShowActionModal(true);
   };
 
   const handleActionSubmit = async () => {
-         const token = requireToken(router);
-      
-      if (!token) return;
-    if (!selectedTeacher) return;
+    const token = requireToken(router);
+    if (!token || !selectedTeacher) return;
     setSubmittingAction(true);
 
     Swal.fire({
       title: "Submitting...",
       text: "Please wait",
       allowOutsideClick: false,
-      didOpen: () => {
-        Swal.showLoading();
-      },
+      didOpen: () => Swal.showLoading(),
     });
 
     try {
@@ -114,41 +106,32 @@ const TransferTable = () => {
           t.id === selectedTeacher.id ? { ...t, status: actionData.status as typeof t.status } : t
         )
       );
-      setShowActionModal(false);
+      setSelectedTeacher(null);
       Swal.fire("Success", "Transfer action submitted successfully!", "success");
     } catch (err: any) {
       let errorMsg = "Failed to submit action";
-      if (err.response?.data?.message) {
-        errorMsg = err.response.data.message;
-      } else if (err.message) {
-        errorMsg = err.message;
-      }
+      if (err.response?.data?.message) errorMsg = err.response.data.message;
+      else if (err.message) errorMsg = err.message;
       Swal.fire("Error", errorMsg, "error");
     } finally {
       setSubmittingAction(false);
-      setSelectedTeacher(null);
     }
   };
 
   const handleRequestTransfer = async () => {
-
-         const token = requireToken(router);
-      
-      if (!token) return;
+    const token = requireToken(router);
+    if (!token) return;
     if (!transferRequest.toSchoolId) {
       Swal.fire("Error", "Please select a new school", "error");
       return;
     }
 
     setSubmittingRequest(true);
-
     Swal.fire({
       title: "Submitting...",
       text: "Please wait",
       allowOutsideClick: false,
-      didOpen: () => {
-        Swal.showLoading();
-      },
+      didOpen: () => Swal.showLoading(),
     });
 
     try {
@@ -156,21 +139,19 @@ const TransferTable = () => {
       const data = await getTransfers(token);
       setTeachers(data);
       setShowRequestModal(false);
-      setTransferRequest({ teacherId: 123, toSchoolId: 0, reason: "" }); // reset
+      setTransferRequest({ teacherId: teacherId, toSchoolId: 0, reason: "" });
       Swal.fire("Success", "Transfer request submitted successfully!", "success");
     } catch (err: any) {
       let errorMsg = "Failed to submit transfer request";
-      if (err.response?.data?.message) {
-        errorMsg = err.response.data.message;
-      } else if (err.message) {
-        errorMsg = err.message;
-      }
+      if (err.response?.data?.message) errorMsg = err.response.data.message;
+      else if (err.message) errorMsg = err.message;
       Swal.fire("Error", errorMsg, "error");
     } finally {
       setSubmittingRequest(false);
     }
   };
 
+  // Filtered and paginated teachers
   const filteredTeachers = teachers.filter((t) =>
     [t.teacher.firstName, t.teacher.lastName, t.teacher.nrc, t.teacher.currentSchoolName]
       .join(" ")
@@ -178,11 +159,22 @@ const TransferTable = () => {
       .includes(searchQuery.toLowerCase())
   );
 
+  const totalPages = Math.ceil(filteredTeachers.length / itemsPerPage);
+  const paginatedTeachers = filteredTeachers.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, teachers]);
+
   if (loading) return <p className="text-center py-4">Loading transfers...</p>;
   if (error) return <p className="text-center py-4 text-red-500">{error}</p>;
 
   return (
     <div className="relative overflow-x-auto shadow-md sm:rounded-lg p-4">
+      {/* Search & Request */}
       <div className="flex justify-between items-center mb-4">
         <input
           type="text"
@@ -203,6 +195,7 @@ const TransferTable = () => {
       <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
         <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
           <tr>
+            <th className="px-6 py-3">No</th>
             <th className="px-6 py-3">Name</th>
             <th className="px-6 py-3">NRC No.</th>
             <th className="px-6 py-3">Current School</th>
@@ -213,18 +206,19 @@ const TransferTable = () => {
           </tr>
         </thead>
         <tbody>
-          {filteredTeachers.length > 0 ? (
-            filteredTeachers.map((t) => (
+          {paginatedTeachers.length > 0 ? (
+            paginatedTeachers.map((t) => (
               <tr
                 key={t.id}
                 className="odd:bg-white odd:dark:bg-gray-900 even:bg-gray-50 even:dark:bg-gray-800 border-b dark:border-gray-700 border-gray-200"
               >
+                <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">{t.id}</td>
                 <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">
                   {t.teacher.firstName} {t.teacher.lastName}
                 </td>
                 <td className="px-6 py-4">{t.teacher.nrc}</td>
                 <td className="px-6 py-4">{t.teacher.currentSchool ? t.teacher.currentSchool.name : "-"}</td>
-                <td className="px-6 py-4">  {t.toSchool ? t.toSchool.name : "-"}</td>
+                <td className="px-6 py-4">{t.toSchool ? t.toSchool.name : "-"}</td>
                 <td className="px-6 py-4">
                   <span
                     className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium inset-ring ${
@@ -241,11 +235,9 @@ const TransferTable = () => {
                         : "bg-gray-400/10 text-gray-400 inset-ring-gray-400/20"
                     }`}
                   >
-                    {t.status.replace("_", " ").toUpperCase() || "PENDING"}
+                    {t.status.replace(/_/g, " ").toUpperCase() || "PENDING"}
                   </span>
                 </td>
-
-
                 <td className="px-6 py-4">{new Date(t.createdAt).toLocaleDateString()}</td>
                 <td className="px-6 py-4 text-sm text-indigo-600 hover:text-indigo-900">
                   <Link href={`/transfer-view/${t.id}`}>View</Link>
@@ -262,16 +254,35 @@ const TransferTable = () => {
         </tbody>
       </table>
 
+      {/* Pagination */}
+      <div className="flex justify-between items-center mt-4">
+        <span className="text-sm text-gray-600 dark:text-gray-400">
+          Page {currentPage} of {totalPages}
+        </span>
+        <div className="flex gap-2">
+          <button
+            className="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50"
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage((p) => p - 1)}
+          >
+            Prev
+          </button>
+          <button
+            className="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50"
+            disabled={currentPage === totalPages}
+            onClick={() => setCurrentPage((p) => p + 1)}
+          >
+            Next
+          </button>
+        </div>
+      </div>
+
       {/* Request Modal */}
       {showRequestModal && (
         <div className="fixed inset-0 bg-opacity-20 flex justify-center items-center z-50">
           <div className="bg-gray-900 rounded-lg shadow-lg p-6 w-full max-w-lg">
             <h2 className="text-white font-bold mb-4">Request Transfer</h2>
             <div className="grid grid-cols-1 gap-4">
-              {/* Static teacher */}
-              
-
-              {/* School dropdown */}
               <select
                 value={transferRequest.toSchoolId}
                 onChange={(e) =>

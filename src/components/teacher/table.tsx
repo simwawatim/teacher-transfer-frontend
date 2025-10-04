@@ -149,28 +149,42 @@ const handleAddTeacher = async () => {
 
 
   // ===== Pagination & Filtering (unchanged) =====
-  const filteredTeachers = teachers.filter((teacher: any) =>
-    Object.values(teacher).join(" ").toLowerCase().includes(searchTerm.toLowerCase())
+const filteredTeachers = teachers.filter((teacher: any) => {
+  const fullName = `${teacher.firstName} ${teacher.lastName}`.toLowerCase();
+  const nrc = (teacher.nrc || "").toLowerCase();
+  const tsNo = (teacher.tsNo || "").toLowerCase();
+  const school = (teacher.currentSchool?.name || "").toLowerCase();
+  const position = (teacher.currentPosition || "").toLowerCase();
+  const subject = (teacher.subjectSpecialization || "").toLowerCase();
+
+  const term = searchTerm.toLowerCase();
+  return (
+    fullName.includes(term) ||
+    nrc.includes(term) ||
+    tsNo.includes(term) ||
+    school.includes(term) ||
+    position.includes(term) ||
+    subject.includes(term)
   );
-  const indexOfLast = currentPage * itemsPerPage;
-  const indexOfFirst = indexOfLast - itemsPerPage;
-  const currentTeachers = filteredTeachers.slice(indexOfFirst, indexOfLast);
+});
+
+// ===== Search Options for datalist =====
+const searchOptions = [
+  ...teachers.map((t) => `${t.firstName} ${t.lastName}`),
+  ...teachers.map((t) => t.nrc),
+  ...teachers.map((t) => t.tsNo),
+  ...teachers.map((t) => t.currentSchool?.name ?? ""),
+  ...teachers.map((t) => t.currentPosition ?? ""),
+  ...teachers.map((t) => t.subjectSpecialization ?? "")
+].filter(Boolean);
+
+
+  // Calculate total pages and current teachers for pagination
   const totalPages = Math.ceil(filteredTeachers.length / itemsPerPage);
-
-  const searchOptions = Array.from(
-    new Set(
-      teachers.flatMap((teacher: any) => [
-        teacher.firstName,
-        teacher.lastName,
-        teacher.nrc,
-        teacher.tsNo,
-        teacher.currentSchoolName,
-        teacher.currentPosition,
-        teacher.subjectSpecialization,
-      ])
-    )
+  const currentTeachers = filteredTeachers.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
   );
-
 
   return (
     <div className="p-6">
@@ -186,14 +200,9 @@ const handleAddTeacher = async () => {
           placeholder="Search teachers..."
           list="teacherSearch"
           className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400"
-          value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
-        <datalist id="teacherSearch">
-          {searchOptions.map((option, idx) => (
-            <option key={idx} value={option} />
-          ))}
-        </datalist>
+      
       </div>
 
       {/* Table */}
@@ -201,7 +210,7 @@ const handleAddTeacher = async () => {
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead className="bg-gray-100 dark:bg-gray-800">
             <tr>
-              {["Name", "NRC No.", "TS No.", "Current School", "Position", "Subject", "Action"].map((header) => (
+              {["No","Name", "NRC No.", "TS No.", "Current School", "Position", "Subject", "Action"].map((header) => (
                 <th key={header} className="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                   {header}
                 </th>
@@ -210,7 +219,12 @@ const handleAddTeacher = async () => {
           </thead>
           <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
             {currentTeachers.map((teacher: any, index: number) => (
+
+
               <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                        {teacher.id}
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                   {teacher.firstName} {teacher.lastName}
                 </td>
@@ -236,10 +250,10 @@ const handleAddTeacher = async () => {
           Page {currentPage} of {totalPages}
         </span>
         <div className="flex gap-2">
-          <button className="px-3 py-1 border rounded disabled:opacity-50" disabled={currentPage === 1} onClick={() => setCurrentPage((p) => p - 1)}>
+          <button className="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50" disabled={currentPage === 1} onClick={() => setCurrentPage((p) => p - 1)}>
             Prev
           </button>
-          <button className="px-3 py-1 border rounded disabled:opacity-50" disabled={currentPage === totalPages} onClick={() => setCurrentPage((p) => p + 1)}>
+          <button className="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50" disabled={currentPage === totalPages} onClick={() => setCurrentPage((p) => p + 1)}>
             Next
           </button>
         </div>
