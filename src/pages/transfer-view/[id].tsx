@@ -1,5 +1,5 @@
 import HeaderPage from "@/components/header/page"
-import TransferViewComp from "../../components/transfer/transfer-view-comp"
+import TransferViewComp from "../../components/transfer/transfer_view_comp"
 import Sidebar from "@/components/sidenav/page"
 
 const TransferView = () =>{

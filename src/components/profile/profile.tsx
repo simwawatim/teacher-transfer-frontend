@@ -1,230 +1,323 @@
-import { useState } from "react";
+"use client";
 
-// ✅ Step 1: Extend Teacher type with image field
-type Teacher = {
-  name: string;
+import React, { useEffect, useState } from "react";
+import { HiAcademicCap, HiLocationMarker, HiOutlineOfficeBuilding } from "react-icons/hi";
+import { IMAGE_BASE_URL, API_BASE_URL } from "../../api/base/base";
+import { requireToken } from "@/api/base/token";
+import router from "next/router";
+
+interface School {
+  id: number;
+  name: string | null;
+  code: string;
+  district: string;
+  province: string;
+}
+
+interface Teacher {
+  id: number;
+  firstName: string;
+  lastName: string;
+  profilePicture: string | null;
+  email: string;
   nrc: string;
   tsNo: string;
-  school: string;
-  position: string;
-  subject: string;
-  experience: string;
-  email: string;
-  phone: string;
-  bio: string;
-  education: string;
-  rating: number;
-  reviews: number;
-  image: string; // profile picture path/URL
-};
+  address: string;
+  maritalStatus: string;
+  medicalCertificate: string | null;
+  academicQualifications: string | null;
+  professionalQualifications: string | null;
+  currentPosition: string;
+  subjectSpecialization: string;
+  currentSchoolId: number;
+  currentSchool: School | null;
+}
 
-export default function ProfileComp() {
-  const [teacher, setTeacher] = useState<Teacher>({
-    name: "John Mwansa",
-    nrc: "123456111",
-    tsNo: "TS00123",
-    school: "Kyawama Secondary",
-    position: "Subject Teacher",
-    subject: "Mathematics",
-    experience: "5 yrs",
-    email: "john.mwansa@kyawama.edu",
-    phone: "+260 123 456 789",
-    bio: "Dedicated mathematics teacher with 5 years of experience in secondary education. Specialized in algebra and calculus. Committed to student success and innovative teaching methods.",
-    education: "Bachelor of Education, University of Zambia",
-    rating: 4.8,
-    reviews: 42,
-    image: "../blank-male.jpg", // default picture
+const TeacherProfilePage: React.FC<{ teacherId: number }> = ({ teacherId }) => {
+  const [teacher, setTeacher] = useState<Teacher | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    email: "",
+    address: "",
+    maritalStatus: "",
   });
 
-  const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState<Teacher>(teacher);
+  const [profileFile, setProfileFile] = useState<File | null>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
-  // ✅ Step 2: Handle text/number field changes
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
+  useEffect(() => {
+    const fetchTeacher = async () => {
+      const token = requireToken(router);
+      
+      if (!token) return;
 
-    setFormData((prev) => ({
-      ...prev,
-      [name]: name === "rating" || name === "reviews" ? Number(value) : value,
-    }));
+      try {
+        const res = await fetch(`${API_BASE_URL}/teachers/${teacherId}`, {
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        });
+        if (!res.ok) throw new Error("Failed to fetch teacher data");
+        const data = await res.json();
+        setTeacher(data);
+        setFormData({
+          email: data.email,
+          address: data.address,
+          maritalStatus: data.maritalStatus,
+        });
+        setPreviewImage(data.profilePicture ? `${IMAGE_BASE_URL}/${data.profilePicture}` : null);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTeacher();
+  }, [teacherId]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // ✅ Step 3: Handle profile picture upload
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const imageUrl = URL.createObjectURL(file);
-      setFormData((prev) => ({ ...prev, image: imageUrl }));
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setProfileFile(e.target.files[0]);
+      setPreviewImage(URL.createObjectURL(e.target.files[0]));
     }
   };
 
-  const handleSave = () => {
-    setTeacher(formData);
-    setIsEditing(false);
+  const handleSave = async () => {
+    const token = requireToken(router);
+    if (!token || !teacher) return;
+
+    try {
+      const dataToSend = new FormData();
+      dataToSend.append("email", formData.email);
+      dataToSend.append("address", formData.address);
+      dataToSend.append("maritalStatus", formData.maritalStatus);
+      if (profileFile) dataToSend.append("profilePicture", profileFile);
+
+      const res = await fetch(`${API_BASE_URL}/teachers/${teacher.id}`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}` },
+        body: dataToSend,
+      });
+
+      if (!res.ok) throw new Error("Failed to update teacher");
+
+      const updatedTeacher = await res.json();
+      setTeacher(updatedTeacher);
+      setModalOpen(false);
+      setProfileFile(null);
+      alert("Teacher updated successfully!");
+    } catch (error) {
+      console.error(error);
+      alert("Error updating teacher.");
+    }
   };
+  
+
+  if (loading) return <p className="p-6 text-center">Loading...</p>;
+  if (!teacher) return <p className="p-6 text-center">Teacher not found</p>;
 
   return (
-    <section className="py-8 bg-white md:py-16 dark:bg-gray-900 antialiased">
-      <div className="max-w-screen-xl px-4 mx-auto 2xl:px-0">
-        <div className="lg:grid lg:grid-cols-2 lg:gap-8 xl:gap-16">
-          {/* Profile Image */}
-          <div className="shrink-0 max-w-md lg:max-w-lg mx-auto">
-            <div className="relative">
-              <img
-                className="w-full rounded-lg shadow-lg dark:shadow-gray-800"
-                src={isEditing ? formData.image : teacher.image}
-                alt={`${teacher.name}, ${teacher.position}`}
+    <section className="py-8 bg-white dark:bg-gray-900 min-h-screen w-full">
+      <div className="max-w-full mx-auto px-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 w-full h-full">
+
+          {/* Left Column: Profile + Files */}
+          <div className="md:col-span-1 flex flex-col gap-6 h-full">
+            <div className="p-6 bg-gray-50 dark:bg-gray-800 flex flex-col items-center justify-between rounded-lg shadow-sm h-64">
+             <img
+                className="w-24 h-24 rounded-full object-cover mb-2"
+                src={
+                  previewImage ||
+                  (teacher.profilePicture ? `${IMAGE_BASE_URL}${teacher.profilePicture}` : "/blank-male.jpg")
+                }
+                alt="Profile"
               />
-              {isEditing && (
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  className="mt-2 block text-sm text-gray-500 dark:text-gray-400"
-                />
-              )}
-              <div className="absolute bottom-4 right-4 bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full dark:bg-green-900 dark:text-green-300">
-                Available
+
+              <h5 className="text-lg font-bold text-gray-900 dark:text-white text-center">
+                {teacher.firstName} {teacher.lastName}
+              </h5>
+              <span className="inline-block px-3 py-1 text-sm font-semibold rounded-full bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200 cursor-not-allowed">
+                {teacher.currentPosition}
+              </span>
+            </div>
+
+            <div className="p-6 bg-gray-50 dark:bg-gray-800 rounded-lg shadow-sm flex-1">
+              <div className="grid grid-cols-2 gap-4 h-full">
+                {teacher.medicalCertificate && (
+                  <a
+                    href={`${IMAGE_BASE_URL}${teacher.medicalCertificate}`}
+                    target="_blank"
+                    className="rounded-lg bg-white dark:bg-gray-700 flex items-center justify-center shadow-sm"
+                  >
+                    Medical
+                  </a>
+                )}
+                {teacher.academicQualifications && (
+                  <a
+                    href={`${IMAGE_BASE_URL}${teacher.academicQualifications}`}
+                    target="_blank"
+                    className="rounded-lg bg-white dark:bg-gray-700 flex items-center justify-center shadow-sm"
+                  >
+                    Academic
+                  </a>
+                )}
+                {teacher.professionalQualifications && (
+                  <a
+                    href={`${IMAGE_BASE_URL}${teacher.professionalQualifications}`}
+                    target="_blank"
+                    className="col-span-2 rounded-lg bg-white dark:bg-gray-700 flex items-center justify-center shadow-sm"
+                  >
+                    Professional
+                  </a>
+                )}
               </div>
             </div>
           </div>
 
-          {/* Info Section */}
-          <div className="mt-6 sm:mt-8 lg:mt-0">
-            {isEditing ? (
-              <>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  className="text-2xl font-bold w-full mb-2 px-2 py-1 border rounded"
-                />
-                <input
-                  type="text"
-                  name="position"
-                  value={formData.position}
-                  onChange={handleChange}
-                  className="text-lg w-full mb-4 px-2 py-1 border rounded"
-                />
-              </>
-            ) : (
-              <>
-                <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl dark:text-white">
-                  {teacher.name}
-                </h1>
-                <p className="text-lg text-primary-700 dark:text-primary-400 mt-1">
-                  {teacher.position}
-                </p>
-              </>
-            )}
+          {/* Right Column: Combined Info */}
+          <div className="md:col-span-3 p-6 bg-gray-50 dark:bg-gray-800 rounded-lg shadow-sm flex flex-col gap-6 h-full">
 
-            {/* Details Grid */}
-            <div className="grid grid-cols-2 gap-4 mt-6">
-              {(["nrc", "tsNo", "subject", "education"] as (keyof Teacher)[]).map(
-                (field) => (
-                  <div
-                    key={field}
-                    className="p-4 bg-gray-50 rounded-lg dark:bg-gray-800"
-                  >
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {field.toUpperCase()}
-                    </p>
-                    {isEditing ? (
-                      <input
-                        type="text"
-                        name={field}
-                        value={formData[field] as string}
-                        onChange={handleChange}
-                        className="w-full px-2 py-1 border rounded dark:bg-gray-700 dark:text-white"
-                      />
-                    ) : (
-                      <p className="text-gray-900 dark:text-white font-medium">
-                        {teacher[field]}
-                      </p>
-                    )}
-                  </div>
-                )
-              )}
+            {/* Personal Info */}
+            <div className="flex-1 p-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+              <h5 className="text-xl font-bold mb-4 text-gray-900 dark:text-white flex justify-between items-center">
+                Personal Info
+                <button
+                  onClick={() => setModalOpen(true)}
+                  className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
+                >
+                  Edit
+                </button>
+              </h5>
+              <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+                <li className="py-2 flex justify-between"><span className="text-gray-500 dark:text-gray-400">First Name:</span><span className="font-medium text-gray-900 dark:text-white">{teacher.firstName}</span></li>
+                <li className="py-2 flex justify-between"><span className="text-gray-500 dark:text-gray-400">Last Name:</span><span className="font-medium text-gray-900 dark:text-white">{teacher.lastName}</span></li>
+                <li className="py-2 flex justify-between"><span className="text-gray-500 dark:text-gray-400">Address:</span><span className="font-medium text-gray-900 dark:text-white">{teacher.address}</span></li>
+                <li className="py-2 flex justify-between"><span className="text-gray-500 dark:text-gray-400">Marital Status:</span><span className="font-medium text-gray-900 dark:text-white">{teacher.maritalStatus}</span></li>
+                <li className="py-2 flex justify-between"><span className="text-gray-500 dark:text-gray-400">Specialization:</span><span className="font-medium text-gray-900 dark:text-white">{teacher.subjectSpecialization}</span></li>
+              </ul>
             </div>
 
-            {/* Bio */}
-            <div className="mt-6">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                About
-              </h2>
-              {isEditing ? (
-                <textarea
-                  name="bio"
-                  value={formData.bio}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white"
-                  rows={4}
-                />
+            {/* Current School */}
+            <div className="flex-1 p-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+              <h5 className="flex items-center text-xl font-bold mb-4 text-gray-900 dark:text-white">
+                <HiAcademicCap className="mr-2 text-blue-500" /> Current School
+              </h5>
+              {teacher.currentSchool && teacher.currentSchool.name ? (
+                <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+                  <li className="py-3 flex justify-between items-center">
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white flex items-center">
+                        <HiOutlineOfficeBuilding className="mr-1 text-gray-400" />
+                        {teacher.currentSchool.name}
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
+                        <HiLocationMarker className="mr-1 text-gray-400" />
+                        {teacher.currentSchool.province}
+                      </p>
+                    </div>
+                    <span className="text-base font-semibold text-gray-900 dark:text-white flex items-center">
+                      <HiLocationMarker className="mr-1 text-gray-400" />
+                      {teacher.currentSchool.district}
+                    </span>
+                  </li>
+                </ul>
               ) : (
-                <p className="text-gray-500 dark:text-gray-400 mb-6">
-                  {teacher.bio}
+                <p className="text-gray-500 dark:text-gray-400 flex items-center">
+                  <HiOutlineOfficeBuilding className="mr-2" /> No School Assigned
                 </p>
               )}
             </div>
 
             {/* Contact Info */}
-            <div className="mt-6 p-6 bg-gray-50 rounded-lg dark:bg-gray-800">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Contact Information
-              </h3>
-              {(["phone", "email", "school"] as (keyof Teacher)[]).map(
-                (field) => (
-                  <div key={field} className="mb-3">
-                    {isEditing ? (
-                      <input
-                        type="text"
-                        name={field}
-                        value={formData[field] as string}
-                        onChange={handleChange}
-                        className="w-full px-2 py-1 border rounded dark:bg-gray-700 dark:text-white"
-                      />
-                    ) : (
-                      <span className="text-gray-600 dark:text-gray-400">
-                        {teacher[field]}
-                      </span>
-                    )}
-                  </div>
-                )
-              )}
+            <div className="flex-1 p-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+              <h5 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Contact Info</h5>
+              <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+                <li className="py-2 flex justify-between"><span className="text-gray-500 dark:text-gray-400">Email:</span><span className="font-medium text-gray-900 dark:text-white">{teacher.email}</span></li>
+                <li className="py-2 flex justify-between"><span className="text-gray-500 dark:text-gray-400">NRC:</span><span className="font-medium text-gray-900 dark:text-white">{teacher.nrc}</span></li>
+                <li className="py-2 flex justify-between"><span className="text-gray-500 dark:text-gray-400">TS Number:</span><span className="font-medium text-gray-900 dark:text-white">{teacher.tsNo}</span></li>
+              </ul>
             </div>
 
-            {/* Buttons */}
-            <div className="mt-6 flex gap-4">
-              {isEditing ? (
-                <>
-                  <button
-                    onClick={handleSave}
-                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                  >
-                    Save
-                  </button>
-                  <button
-                    onClick={() => setIsEditing(false)}
-                    className="px-4 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500"
-                  >
-                    Cancel
-                  </button>
-                </>
-              ) : (
-                <button
-                  onClick={() => setIsEditing(true)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                >
-                  Edit Profile
-                </button>
-              )}
-            </div>
           </div>
         </div>
       </div>
+
+      {/* Modal */}
+      {modalOpen && (
+        <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
+            <h5 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Update Teacher Info</h5>
+            <div className="flex flex-col gap-4">
+
+              {/* Profile Picture Upload */}
+              <div>
+                <label className="block text-gray-700 dark:text-gray-300 mb-1">Profile Picture</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="w-full text-gray-900 dark:text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className="w-full border px-3 py-2 rounded text-gray-900 dark:text-white dark:bg-gray-700"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-700 dark:text-gray-300 mb-1">Address</label>
+                <input
+                  type="text"
+                  name="address"
+                  value={formData.address}
+                  onChange={handleChange}
+                  className="w-full border px-3 py-2 rounded text-gray-900 dark:text-white dark:bg-gray-700"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-700 dark:text-gray-300 mb-1">Marital Status</label>
+                <select
+                  name="maritalStatus"
+                  value={formData.maritalStatus}
+                  onChange={handleChange}
+                  className="w-full border px-3 py-2 rounded text-gray-900 dark:text-white dark:bg-gray-700"
+                >
+                  <option value="Single">Single</option>
+                  <option value="Married">Married</option>
+                  <option value="Divorced">Divorced</option>
+                  <option value="Widowed">Widowed</option>
+                </select>
+              </div>
+              <div className="flex justify-end gap-3 mt-4">
+                <button
+                  onClick={() => setModalOpen(false)}
+                  className="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-white rounded hover:bg-gray-400"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSave}
+                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </section>
   );
-}
+};
+
+export default TeacherProfilePage;
