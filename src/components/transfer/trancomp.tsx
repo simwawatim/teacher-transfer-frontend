@@ -45,7 +45,6 @@ const TransferTable = () => {
     reason: "",
   });
 
-  // Fetch transfers
   useEffect(() => {
     const token = requireToken(router);
     if (!token) return;
@@ -66,7 +65,43 @@ const TransferTable = () => {
     fetchTransfers();
   }, []);
 
-  // Fetch schools
+
+
+    const handleRequestTransfer = async () => {
+      const token = requireToken(router);
+      if (!token) return;
+      if (!transferRequest.toSchoolId) {
+        Swal.fire("Error", "Please select a new school", "error");
+        return;
+      }
+
+      setSubmittingRequest(true);
+      Swal.fire({
+        title: "Submitting...",
+        text: "Please wait",
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading(),
+      });
+
+      try {
+        await submitTransfer(transferRequest.teacherId, transferRequest.toSchoolId, token);
+        const data = await getTransfers(token);
+        setTeachers(data);
+        setShowRequestModal(false);
+        setTransferRequest({ teacherId: teacherId, toSchoolId: 0, reason: "" });
+        Swal.fire("Success", "Transfer request submitted successfully!", "success");
+      } catch (err: any) {
+        let errorMsg = "Failed to submit transfer request";
+        if (err.response?.data?.message) errorMsg = err.response.data.message;
+        else if (err.message) errorMsg = err.message;
+        Swal.fire("Error", errorMsg, "error");
+      } finally {
+        setSubmittingRequest(false);
+      }
+    };
+
+
+    // Fetch schools
   useEffect(() => {
     const fetchSchools = async () => {
       const token = requireToken(router);
@@ -115,39 +150,6 @@ const TransferTable = () => {
       Swal.fire("Error", errorMsg, "error");
     } finally {
       setSubmittingAction(false);
-    }
-  };
-
-  const handleRequestTransfer = async () => {
-    const token = requireToken(router);
-    if (!token) return;
-    if (!transferRequest.toSchoolId) {
-      Swal.fire("Error", "Please select a new school", "error");
-      return;
-    }
-
-    setSubmittingRequest(true);
-    Swal.fire({
-      title: "Submitting...",
-      text: "Please wait",
-      allowOutsideClick: false,
-      didOpen: () => Swal.showLoading(),
-    });
-
-    try {
-      await submitTransfer(transferRequest.teacherId, transferRequest.toSchoolId, token);
-      const data = await getTransfers(token);
-      setTeachers(data);
-      setShowRequestModal(false);
-      setTransferRequest({ teacherId: teacherId, toSchoolId: 0, reason: "" });
-      Swal.fire("Success", "Transfer request submitted successfully!", "success");
-    } catch (err: any) {
-      let errorMsg = "Failed to submit transfer request";
-      if (err.response?.data?.message) errorMsg = err.response.data.message;
-      else if (err.message) errorMsg = err.message;
-      Swal.fire("Error", errorMsg, "error");
-    } finally {
-      setSubmittingRequest(false);
     }
   };
 

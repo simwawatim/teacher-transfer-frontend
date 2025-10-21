@@ -15,7 +15,6 @@ const HomePage = () => {
   }, []);
 
   if (loggedInUserRole === null) {
-    // Prevent hydration mismatch by waiting until user data is loaded
     return null;
   }
 

@@ -84,12 +84,10 @@ const TeachersTable = () => {
     fetchSchools();
   }, []);
 
-  // ===== Handle file change =====
   const handleFileChange = (field: string, file: File | null) => {
     setNewTeacher({ ...newTeacher, [field]: file });
   };
 
-  // ===== Handle add teacher =====
 const handleAddTeacher = async () => {
   setLoading(true);
   try {
@@ -127,7 +125,7 @@ const handleAddTeacher = async () => {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
-        // NO Content-Type here
+
       },
       body: formData
     });
