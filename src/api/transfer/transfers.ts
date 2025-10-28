@@ -1,6 +1,4 @@
 import { apiClient } from "../../api/client/apiClient";
-
-// Define the School interface
 export interface School {
   id: number;
   name: string;
@@ -14,8 +12,6 @@ export type TransferStatus =
   | "headteacher_rejected"
   | "approved"
   | "rejected";
-
-// Define the Teacher interface
 export interface Teacher {
   id: number;
   firstName: string;
@@ -40,7 +36,6 @@ export interface Teacher {
   currentSchoolId: number | null;
 }
 
-// Transfer response interface
 export interface TransferResponse {
   id: number;
   status: TransferStatus;
@@ -54,15 +49,8 @@ export interface TransferResponse {
   toSchool: School | null;
 }
 
-// Fetch all transfers
-export const getTransfers = (
-  token: string | null
-): Promise<TransferResponse[]> =>
-  apiClient<TransferResponse[]>(
-    "http://localhost:4000/api/transfers",
-    {},
-    token
-  ).then((data) =>
+export const getTransfers = ( token: string | null ): Promise<TransferResponse[]> =>
+  apiClient<TransferResponse[]>( "https://teacher-transfer-backend.vercel.app/api/transfers",{}, token).then((data) =>
     data.map((t) => ({
       ...t,
       teacher: {
@@ -77,15 +65,9 @@ export const getTransfers = (
     }))
   );
 
-// Submit a new transfer
-export const submitTransfer = (
-  teacherId: number,
-  toSchoolId: number,
-  token: string | null
-) =>
-  apiClient(
-    "http://localhost:4000/api/transfers",
-    {
+
+export const submitTransfer = (teacherId: number, toSchoolId: number, token: string | null ) =>
+  apiClient( "https://teacher-transfer-backend.vercel.app/api/transfers", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ teacherId, toSchoolId }),
@@ -93,26 +75,13 @@ export const submitTransfer = (
     token
   );
 
-// Fetch transfer by ID
-export const fetchTransferById = (
-  id: string,
-  token: string | null
-): Promise<TransferResponse> =>
-  apiClient<TransferResponse>(
-    `http://localhost:4000/api/transfers/${id}`,
-    {},
-    token
+
+export const fetchTransferById = ( id: string, token: string | null ): Promise<TransferResponse> =>
+  apiClient<TransferResponse>( `https://teacher-transfer-backend.vercel.app/api/transfers/${id}`, {}, token
   );
 
-// ✅ Update transfer status (fixed to support all enums)
-export const updateTransferStatus = (
-  id: number,
-  status: TransferStatus,
-  reason: string = "",
-  token: string | null = null
-) =>
-  apiClient(
-    `http://localhost:4000/api/transfers/${id}/status`,
+export const updateTransferStatus = (id: number, status: TransferStatus, reason: string = "", token: string | null = null) =>
+  apiClient(`https://teacher-transfer-backend.vercel.app/api/transfers/${id}/status`,
     {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
