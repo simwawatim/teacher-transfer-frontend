@@ -45,6 +45,8 @@ export const addTeacher = async (formData: FormData, token?: string | null): Pro
     token
   );
 };
+
+
 export const getTeacherById = (id: string, token: string | null): Promise<Teacher> => {
   return apiClient<Teacher>(`${API_BASE_URL}/teachers/${id}`, {}, token);
 };

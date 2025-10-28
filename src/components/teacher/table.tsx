@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import Swal from "sweetalert2";
-import { getTeachers, Teacher } from "../../api/teachers/teachers";
+import { addTeacher, getTeachers, Teacher } from "../../api/teachers/teachers";
 import { getSchools } from "../../api/school/schools";
 import router from "next/router";
 import { getCurrentUser } from "@/api/base/jwt";
@@ -121,18 +121,8 @@ const handleAddTeacher = async () => {
     });
 
     const token = localStorage.getItem("token");
-    const response = await fetch("http://localhost:4000/api/auth/register", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-
-      },
-      body: formData
-    });
-
-    const saved = await response.json();
-    if (!response.ok) throw new Error(saved.message || "Failed to save teacher");
-
+    const savedTeacher = await addTeacher(formData, token);
+    
     Swal.fire("Success", "Teacher added successfully", "success");
     setIsModalOpen(false);
     setLoading(false);

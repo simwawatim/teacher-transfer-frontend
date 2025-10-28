@@ -1,4 +1,6 @@
 import { apiClient } from "../../api/client/apiClient";
+import { API_BASE_URL } from "../base/base";
+
 export interface School {
   id: number;
   name: string;
@@ -12,6 +14,7 @@ export type TransferStatus =
   | "headteacher_rejected"
   | "approved"
   | "rejected";
+
 export interface Teacher {
   id: number;
   firstName: string;
@@ -49,8 +52,9 @@ export interface TransferResponse {
   toSchool: School | null;
 }
 
-export const getTransfers = ( token: string | null ): Promise<TransferResponse[]> =>
-  apiClient<TransferResponse[]>( "https://teacher-transfer-backend.vercel.app/api/transfers",{}, token).then((data) =>
+// Use API_BASE_URL instead of hardcoded URL
+export const getTransfers = (token: string | null): Promise<TransferResponse[]> =>
+  apiClient<TransferResponse[]>(`${API_BASE_URL}/transfers`, {}, token).then((data) =>
     data.map((t) => ({
       ...t,
       teacher: {
@@ -65,9 +69,8 @@ export const getTransfers = ( token: string | null ): Promise<TransferResponse[]
     }))
   );
 
-
-export const submitTransfer = (teacherId: number, toSchoolId: number, token: string | null ) =>
-  apiClient( "https://teacher-transfer-backend.vercel.app/api/transfers", {
+export const submitTransfer = (teacherId: number, toSchoolId: number, token: string | null) =>
+  apiClient(`${API_BASE_URL}/transfers`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ teacherId, toSchoolId }),
@@ -75,14 +78,16 @@ export const submitTransfer = (teacherId: number, toSchoolId: number, token: str
     token
   );
 
+export const fetchTransferById = (id: string, token: string | null): Promise<TransferResponse> =>
+  apiClient<TransferResponse>(`${API_BASE_URL}/transfers/${id}`, {}, token);
 
-export const fetchTransferById = ( id: string, token: string | null ): Promise<TransferResponse> =>
-  apiClient<TransferResponse>( `https://teacher-transfer-backend.vercel.app/api/transfers/${id}`, {}, token
-  );
-
-export const updateTransferStatus = (id: number, status: TransferStatus, reason: string = "", token: string | null = null) =>
-  apiClient(`https://teacher-transfer-backend.vercel.app/api/transfers/${id}/status`,
-    {
+export const updateTransferStatus = (
+  id: number,
+  status: TransferStatus,
+  reason: string = "",
+  token: string | null = null
+) =>
+  apiClient(`${API_BASE_URL}/transfers/${id}/status`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status, reason }),
