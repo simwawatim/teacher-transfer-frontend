@@ -82,7 +82,6 @@ export const updateSchool = async (school: School, token: string): Promise<Schoo
   return res.json();
 };
 
-=
 export const deleteSchool = async (id: number, token: string): Promise<void> => {
   const res = await fetch(`${API_SCHOOLS}/${id}`, {
     method: "DELETE",
