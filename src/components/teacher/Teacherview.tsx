@@ -175,18 +175,7 @@ const TeacherViewLayout: React.FC<TeacherViewProps> = ({ teacherId }) => {
             <h5 className="text-xl font-bold mb-4 text-gray-900 dark:text-white flex items-center gap-2">
               <HiClipboardList className={iconColor} /> Experience
             </h5>
-            {teacher.experience && teacher.experience.length > 0 ? (
-              <ul className="divide-y divide-gray-200 dark:divide-gray-700 max-h-96 overflow-auto">
-                {teacher.experience.slice(0, 12).map((exp: ExperienceItem, idx: number) => (
-                  <li key={idx} className="py-2 flex justify-between">
-                    <span className="text-gray-500 dark:text-gray-400">{exp.role || exp.position || `Experience ${idx + 1}`}</span>
-                    <span className="font-medium text-gray-900 dark:text-white">{exp.institution || exp.school || exp.details || ""}</span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-gray-500 dark:text-gray-400">No experience listed.</p>
-            )}
+        
           </div>
         </div>
 
