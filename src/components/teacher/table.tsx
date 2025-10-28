@@ -121,7 +121,7 @@ const handleAddTeacher = async () => {
     });
 
     const token = localStorage.getItem("token");
-    const response = await fetch("http://localhost:4000/api/auth/register", {
+    const response = await fetch("https://teacher-transfer-backend.onrender.com/api/auth/register", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
