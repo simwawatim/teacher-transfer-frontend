@@ -10,21 +10,21 @@ export const apiClient = async <T>(
     throw new Error("No authentication token found");
   }
 
-  const headers: HeadersInit = {
-    ...(options.headers || {}),
-    Authorization: `Bearer ${token}`,
-    "Content-Type": "application/json",
-  };
+  const headers = new Headers(options.headers);
+  headers.set("Authorization", `Bearer ${token}`);
+
+  if (!(options.body instanceof FormData)) {
+    headers.set("Content-Type", "application/json");
+  }
 
   const res = await fetch(url, { ...options, headers });
 
-  // Handle Unauthorized
   if (res.status === 401) {
     Router.push("/");
     throw new Error("Unauthorized access");
   }
 
-  // Handle Payload Too Large
+  // Handle payload too large
   if (res.status === 413) {
     return Promise.reject({
       status: 413,
@@ -32,10 +32,15 @@ export const apiClient = async <T>(
     });
   }
 
+  // Handle other errors
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.message || "Request failed");
+    return Promise.reject({
+      status: res.status,
+      message: errorData.message || "Request failed",
+    });
   }
 
+  // Return JSON if available
   return res.json() as Promise<T>;
 };
