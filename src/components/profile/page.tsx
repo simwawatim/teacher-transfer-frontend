@@ -1,30 +1,33 @@
-import HeaderPage from "../header/page"
-import Sidebar from "../sidenav/page"
-import ProfileComp from "./profile"
+import HeaderPage from "../header/page";
+import Sidebar from "../sidenav/page";
+import TeacherProfilePage from "./profile";
+import { getCurrentUser } from "../../api/base/jwt"
 
-const ProfilePage = () =>{
-    return (
-        <>
+const ProfilePage = () => {
 
-        <div className="flex flex-col h-screen">
-            {/* Top Header */}
-            <HeaderPage />
+  const currentUser = getCurrentUser();
+  console.log(currentUser);
+    const teacherId = currentUser?.teacherProfileId ?? 0;
+  return (
+    <div className="flex flex-col h-screen">
+      {/* Top Header */}
+      <HeaderPage />
 
-            {/* Main content area: sidebar + content */}
-            <div className="flex flex-1 overflow-hidden">
-                {/* Sidebar */}
-                <aside className="w-64 border-r  overflow-y-auto">
-                    <Sidebar />
-                </aside>
+      {/* Main content area: sidebar + content */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar */}
+        <aside className="w-64 border-r overflow-y-auto">
+          <Sidebar />
+        </aside>
 
-                {/* Main Content */}
-                <main className="flex-1 p-6 overflow-y-auto">
-                    <ProfileComp />
-                </main>
-            </div>
-        </div>
-        </>
-    )
-}
+        {/* Main Content */}
+        <main className="flex-1 p-6 overflow-y-auto">
+          {/* Pass the teacherId prop */}
+          <TeacherProfilePage  teacherId={teacherId}  />
+        </main>
+      </div>
+    </div>
+  );
+};
 
-export default ProfilePage
+export default ProfilePage;
