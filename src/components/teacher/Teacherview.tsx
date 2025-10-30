@@ -91,28 +91,61 @@ const TeacherViewLayout: React.FC<TeacherViewProps> = ({ teacherId }) => {
           <div className="flex-1 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
             <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Personal Info</h3>
             <ul className="divide-y divide-gray-200 dark:divide-gray-600">
-              {["First Name", "Last Name", "Address", "Marital Status", "NRC", "TS Number"].map((label, i) => (
-                <li key={i} className="py-2 flex justify-between">
-                  <span className="text-gray-500 dark:text-gray-300">{label}:</span>
-                  <span className="font-medium text-gray-900 dark:text-white">
-                    {teacher[label.replace(" ", "").toLowerCase() as keyof Teacher] || "N/A"}
-                  </span>
-                </li>
-              ))}
+              {["First Name", "Last Name", "Address", "Marital Status", "NRC", "TS Number"].map((label, i) => {
+                const keyMap: Record<string, string> = {
+                  "First Name": "firstName",
+                  "Last Name": "lastName",
+                  "Address": "address",
+                  "Marital Status": "maritalStatus",
+                  "NRC": "nrc",
+                  "TS Number": "tsNumber",
+                };
+                const key = keyMap[label];
+                const rawValue = (teacher as any)[key];
+                let displayValue: string = "N/A";
+                if (rawValue !== undefined && rawValue !== null) {
+                  if (typeof rawValue === "object") {
+                    // Prefer a .name if present (for nested objects like school), otherwise stringify
+                    displayValue = (rawValue && (rawValue as any).name) ? String((rawValue as any).name) : JSON.stringify(rawValue);
+                  } else {
+                    displayValue = String(rawValue);
+                  }
+                }
+                return (
+                  <li key={i} className="py-2 flex justify-between">
+                    <span className="text-gray-500 dark:text-gray-300">{label}:</span>
+                    <span className="font-medium text-gray-900 dark:text-white">
+                      {displayValue}
+                    </span>
+                  </li>
+                );
+              })}
             </ul>
           </div>
 
           <div className="flex-1 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
             <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Contact Info</h3>
             <ul className="divide-y divide-gray-200 dark:divide-gray-600">
-              {["Email", "Specialization"].map((label, i) => (
-                <li key={i} className="py-2 flex justify-between">
-                  <span className="text-gray-500 dark:text-gray-300">{label}:</span>
-                  <span className="font-medium text-gray-900 dark:text-white">
-                    {teacher[label.replace(" ", "").toLowerCase() as keyof Teacher] || "N/A"}
-                  </span>
-                </li>
-              ))}
+              {["Email", "Specialization"].map((label, i) => {
+                const key = label.replace(" ", "").toLowerCase() as keyof Teacher;
+                const rawValue = (teacher as any)[key];
+                let displayValue: string = "N/A";
+                if (rawValue !== undefined && rawValue !== null) {
+                  if (typeof rawValue === "object") {
+                    displayValue = (rawValue && (rawValue as any).name) ? String((rawValue as any).name) : JSON.stringify(rawValue);
+                  } else {
+                    displayValue = String(rawValue);
+                  }
+                }
+                return (
+                  <li key={i} className="py-2 flex justify-between">
+                    <span className="text-gray-500 dark:text-gray-300">{label}:</span>
+                    <span className="font-medium text-gray-900 dark:text-white">
+                      {displayValue}
+                    </span>
+                  </li>
+                );
+              })}
               <li className="py-2 flex justify-between">
                 <span className="text-gray-500 dark:text-gray-300">School Name:</span>
                 <span className="font-medium text-gray-900 dark:text-white">{teacher.currentSchool?.name || "N/A"}</span>
@@ -147,21 +180,6 @@ const TeacherViewLayout: React.FC<TeacherViewProps> = ({ teacherId }) => {
           </div>
         </div>
 
-        {/* Experience Section */}
-        {teacher.experience && teacher.experience.length > 0 && (
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Experience</h3>
-            <ul className="divide-y divide-gray-200 dark:divide-gray-600">
-              {teacher.experience.map((exp, i) => (
-                <li key={i} className="py-2">
-                  <p className="font-medium text-gray-900 dark:text-white">{exp.position || exp.role || "N/A"}</p>
-                  <p className="text-gray-500 dark:text-gray-300">{exp.institution || exp.school || ""}</p>
-                  <p className="text-gray-500 dark:text-gray-400 text-sm">{exp.details}</p>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
       </div>
 
       {/* Modal for Images */}

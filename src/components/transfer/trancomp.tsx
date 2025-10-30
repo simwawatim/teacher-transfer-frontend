@@ -37,6 +37,7 @@ const TransferTable = () => {
 
   const currentUser = getCurrentUser();
   const teacherId = currentUser?.teacherProfileId ?? 0;
+  const loggedInUserRole = currentUser?.role 
 
   const [transferRequest, setTransferRequest] = useState({
     teacherId: teacherId,
@@ -132,12 +133,14 @@ const TransferTable = () => {
             className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm"
           />
         </div>
-        <button
-          onClick={() => setShowRequestModal(true)}
-          className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold shadow-md transition-all"
-        >
-          + Request Transfer
-        </button>
+          {loggedInUserRole === "teacher" && (
+              <button
+                onClick={() => setShowRequestModal(true)}
+                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold shadow-md transition-all"
+              >
+                + Request Transfer
+              </button>
+            )}
       </div>
 
       {/* Table */}
@@ -166,15 +169,14 @@ const TransferTable = () => {
                   <td className="px-6 py-3">{t.toSchool?.name || "-"}</td>
                   <td className="px-6 py-3">
                     <span
-                      className={`px-2 py-1 rounded-md text-xs font-semibold ${
-                        t.status === "approved"
+                      className={`px-2 py-1 rounded-md text-xs font-semibold ${t.status === "approved"
                           ? "bg-green-100 text-green-700"
                           : t.status === "rejected"
-                          ? "bg-red-100 text-red-700"
-                          : t.status === "headteacher_approved"
-                          ? "bg-blue-100 text-blue-700"
-                          : "bg-gray-100 text-gray-700"
-                      }`}
+                            ? "bg-red-100 text-red-700"
+                            : t.status === "headteacher_approved"
+                              ? "bg-blue-100 text-blue-700"
+                              : "bg-gray-100 text-gray-700"
+                        }`}
                     >
                       {t.status.replace(/_/g, " ").toUpperCase()}
                     </span>
