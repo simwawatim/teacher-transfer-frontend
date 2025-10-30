@@ -1,47 +1,48 @@
 "use client";
 
-import { BellIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { API_BASE_URL } from "@/api/base/base";
-import NotificationComp from "../../components/notifications/comp";
+import { API_BASE_URL, IMAGE_BASE_URL } from "@/api/base/base";
 
 const HeaderPage = () => {
   const defaultImage = "/blank-male.jpg";
 
-  const [unreadCount, setUnreadCount] = useState(0);
   const [profileImage, setProfileImage] = useState<string>(defaultImage);
-  const [open, setOpen] = useState(false);
-  const [visibleCount, setVisibleCount] = useState(3); // how many to show
   const dropdownRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    setUnreadCount(5); // simulate unread
-    const fetchProfilePicture = async () => {
-      const token = localStorage.getItem("token");
-      if (!token) return;
-      try {
-        const res = await fetch(`${API_BASE_URL}/teachers/me/profile-picture`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) throw new Error("Failed to fetch profile picture");
-        const data = await res.json();
-        if (data.profilePicture) {
-          const updatedUrl = data.profilePicture.replace(":3000", ":4000");
-          setProfileImage(updatedUrl);
-        }
-      } catch (err) {
-        console.error(err);
-      }
-    };
-    fetchProfilePicture();
-  }, []);
+  const fetchProfilePicture = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
 
-  // close dropdown if click outside
+    try {
+      const res = await fetch(`${API_BASE_URL}/teachers/me/profile-picture`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Failed to fetch profile picture");
+
+      const data = await res.json();
+      if (data.profilePicture) {
+  
+        const updatedUrl = data.profilePicture.includes("localhost")
+          ? data.profilePicture.replace("http://localhost:4000", IMAGE_BASE_URL)
+          : data.profilePicture;
+
+        setProfileImage(updatedUrl);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  fetchProfilePicture();
+}, []);
+
+
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setOpen(false);
+        // setOpen(false); // dropdown is currently not used
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -63,49 +64,6 @@ const HeaderPage = () => {
 
         {/* Right Side */}
         <div className="flex items-center space-x-4 relative" ref={dropdownRef}>
-          {/* Notification Dropdown */}
-          <div className="relative">
-            {/* <button
-              onClick={() => setOpen(!open)}
-              className="relative p-2 rounded-full hover:bg-gray-700"
-            >
-              <BellIcon className="h-6 w-6 text-white" />
-              {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full">
-                  {unreadCount}
-                </span>
-              )}
-            </button> */}
-
-            {/* {open && (
-              <div className="absolute right-0 mt-2 w-96 bg-gray-900 rounded-xl shadow-lg z-50">
-                <div className="p-3 font-semibold text-white-700 border-b">
-                  Notifications
-                </div>
-
-                {/* Scrollable notification list */}
-                {/* <div className="max-h-80 overflow-y-auto">
-                  <NotificationComp limit={visibleCount} />
-                </div> */}
-
-                {/* See More button */}
-                {/* <div className="p-3 border-t flex justify-center">
-                  <button
-                    onClick={() => setVisibleCount((prev) => prev + 3)}
-                    className="px-4 py-1.5 text-sm font-medium text-white-600 bg-indigo-600 rounded-full hover:bg-blue-100 transition-colors"
-                  >
-                    See more
-                  </button>
-                </div>
-              </div> */}
-            
-          </div>
-
-          {/* Settings Icon */}
-          {/* <Link href="/settings" className="p-2 rounded-full hover:bg-gray-700">
-            <Cog6ToothIcon className="h-6 w-6 text-white" />
-          </Link> */}
-
           {/* Profile */}
           <Link href="/profile">
             <img
