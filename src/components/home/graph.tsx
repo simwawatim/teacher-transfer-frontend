@@ -11,6 +11,7 @@ import {
 } from "recharts";
 import { fetchStats } from "../../api/stat/stats";
 import router from "next/router";
+import { Clock, CheckCircle, XCircle } from "lucide-react";
 
 const HomeGraph = () => {
   const [data, setData] = useState<any[]>([]);
@@ -43,11 +44,11 @@ const HomeGraph = () => {
   const renderLegendIcon = (value: string) => {
     switch (value) {
       case "pending":
-        return "🕒";
+        return <Clock className="w-4 h-4 text-yellow-400" />;
       case "approved":
-        return "✅";
+        return <CheckCircle className="w-4 h-4 text-green-500" />;
       case "rejected":
-        return "❌";
+        return <XCircle className="w-4 h-4 text-red-500" />;
       default:
         return null;
     }
@@ -56,14 +57,14 @@ const HomeGraph = () => {
   const renderCustomLegend = (props: any) => {
     const { payload } = props;
     return (
-      <div className="flex gap-4 justify-center mt-2">
+      <div className="flex justify-center gap-6 mt-4 flex-wrap">
         {payload.map((entry: any, index: number) => (
           <div
             key={index}
-            className="flex items-center gap-1 text-white font-semibold"
+            className="flex items-center gap-2 bg-gray-800/60 px-3 py-1 rounded-full text-gray-200 font-medium shadow-sm hover:bg-gray-700/80 transition"
           >
-            <span>{renderLegendIcon(entry.value)}</span>
-            <span>{entry.value}</span>
+            {renderLegendIcon(entry.value)}
+            <span className="capitalize">{entry.value}</span>
           </div>
         ))}
       </div>
@@ -76,30 +77,52 @@ const HomeGraph = () => {
   );
 
   return (
-    <div className="w-full h-[24rem] p-6 bg-gray-900 rounded-lg shadow-md">
-      <h2 className="text-xl font-bold text-white mb-4">
-        Teacher Transfers by Month
-      </h2>
+    <div className="w-full p-6 bg-gray-900 rounded-2xl shadow-lg border border-gray-800 transition hover:shadow-xl hover:shadow-gray-800/40">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-semibold text-white tracking-wide">
+          Teacher Transfers by Month
+        </h2>
+        <span className="text-sm text-gray-400 italic">
+          Updated automatically
+        </span>
+      </div>
+
+      <div className="border-t border-gray-700 mb-6" />
 
       {allZero ? (
-        <p className="text-white text-center mt-20">
-          No transfers data to display
-        </p>
+        <div className="flex flex-col items-center justify-center h-[18rem]">
+          <XCircle className="w-10 h-10 text-gray-500 mb-2" />
+          <p className="text-gray-400 text-center text-lg">
+            No transfer data available
+          </p>
+        </div>
       ) : (
-        <ResponsiveContainer width="100%" height="80%">
-          <BarChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#444" />
-            <XAxis dataKey="month" stroke="#fff" />
-            <YAxis stroke="#fff" />
-            <Tooltip
-              contentStyle={{ backgroundColor: "#1f2937", color: "#fff" }}
-            />
-            <Legend content={renderCustomLegend} />
-            <Bar dataKey="pending" fill="#d4aa1e" />
-            <Bar dataKey="approved" fill="#16a34a" />
-            <Bar dataKey="rejected" fill="#b91c1c" />
-          </BarChart>
-        </ResponsiveContainer>
+        <div className="w-full h-[24rem]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#444" />
+              <XAxis
+                dataKey="month"
+                stroke="#fff"
+                tickLine={false}
+                style={{ fontSize: "0.85rem" }}
+              />
+              <YAxis stroke="#fff" tickLine={false} />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "#1f2937",
+                  border: "1px solid #374151",
+                  color: "#fff",
+                }}
+                itemStyle={{ color: "#fff" }}
+              />
+              <Legend content={renderCustomLegend} />
+              <Bar dataKey="pending" fill="#d4aa1e" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="approved" fill="#16a34a" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="rejected" fill="#b91c1c" radius={[6, 6, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       )}
     </div>
   );
