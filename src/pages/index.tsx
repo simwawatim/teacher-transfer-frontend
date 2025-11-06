@@ -20,16 +20,10 @@ const LoginPage = () => {
     try {
       const data = await login(username, password);
 
-      if (data.token) {
-        localStorage.setItem("token", data.token);
-      }
+      if (data.token) localStorage.setItem("token", data.token);
 
       const userRole = data.user?.role;
-      if (userRole === "admin" || userRole === "headteacher") {
-        router.push("/home");
-      } else {
-        router.push("/transfer");
-      }
+      router.push(userRole === "admin" || userRole === "headteacher" ? "/home" : "/transfer");
     } catch (err: any) {
       setError(err?.message || "Something went wrong. Please try again.");
     } finally {
@@ -38,31 +32,30 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex bg-gray-50">
       {/* Left side - Background image */}
-      <div
-        className="hidden md:flex w-2/3 bg-cover bg-center"
-        style={{ backgroundImage: `url(/home.jpg)` }}
-      ></div>
+      <div className="hidden md:flex w-2/3">
+        <img
+          src="/premium_photo-1661963502826-a0ccb55196fd.avif"
+          alt="Transfer"
+          className="object-cover w-full h-full"
+        />
+      </div>
 
       {/* Right side - Form */}
-      <div className="w-full md:w-1/3 flex items-center justify-center bg-gray-900 relative">
-        <div className="bg-white/10 backdrop-blur-md rounded-2xl shadow-lg p-8 w-full max-w-md">
+      <div className="w-full md:w-1/3 flex items-center justify-center p-6">
+        <div className="bg-white rounded-3xl shadow-xl p-10 w-full max-w-md backdrop-blur-sm">
           {/* Header */}
-          <div className="text-center">
-            <h2 className="text-3xl font-bold text-white">
-              Teacher Transfer System
-            </h2>
-            <p className="mt-2 text-gray-300">Sign in to your account</p>
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-gray-800">Teacher Transfer System</h2>
+            <p className="mt-2 text-gray-600">Sign in to your account</p>
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="mt-8 space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Username */}
             <div>
-              <label
-                htmlFor="username"
-                className="block text-sm font-medium text-gray-200"
-              >
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700">
                 Username
               </label>
               <input
@@ -72,26 +65,16 @@ const LoginPage = () => {
                 required
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="mt-2 block w-full rounded-lg bg-gray-800 px-4 py-2 text-base text-white placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition sm:text-sm"
                 placeholder="Enter your username"
+                className="mt-2 w-full rounded-xl border border-gray-300 bg-gray-50 px-4 py-2 text-gray-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition"
               />
             </div>
 
+            {/* Password */}
             <div>
-              <div className="flex items-center justify-between">
-                <label
-                  htmlFor="password"
-                  className="block text-sm font-medium text-gray-200"
-                >
-                  Password
-                </label>
-                <a
-                  href="#"
-                  className="text-sm font-medium text-indigo-400 hover:text-indigo-300 transition"
-                >
-                  Forgot password?
-                </a>
-              </div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                Password
+              </label>
               <input
                 id="password"
                 type="password"
@@ -99,14 +82,14 @@ const LoginPage = () => {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="mt-2 block w-full rounded-lg bg-gray-800 px-4 py-2 text-base text-white placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition sm:text-sm"
                 placeholder="••••••••"
+                className="mt-2 w-full rounded-xl border border-gray-300 bg-gray-50 px-4 py-2 text-gray-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition"
               />
             </div>
 
             {/* Error message */}
             {error && (
-              <div className="rounded-md bg-red-500/20 p-3 text-sm text-red-300 text-center">
+              <div className="rounded-md bg-red-50 p-3 text-sm text-red-700 text-center">
                 {error}
               </div>
             )}
@@ -115,7 +98,7 @@ const LoginPage = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex justify-center items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 active:scale-[0.98] focus:ring-2 focus:ring-indigo-500 focus:outline-none disabled:opacity-50 transition"
+              className="w-full flex justify-center items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-white font-semibold hover:bg-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none disabled:opacity-50 transition"
             >
               {loading ? (
                 <>
@@ -146,6 +129,11 @@ const LoginPage = () => {
               )}
             </button>
           </form>
+
+          {/* Footer */}
+          <p className="mt-6 text-center text-sm text-gray-500">
+            &copy; 2025 Teacher Transfer System. All rights reserved.
+          </p>
         </div>
       </div>
     </div>
