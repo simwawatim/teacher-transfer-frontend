@@ -1,298 +1,280 @@
-import { useState } from "react";
-
-interface Teacher {
-  name: string;
-  nrc: string;
-  tsNo: string;
-  currentSchool: string;
-  newSchool: string;
-  position: string;
-  subject: string;
-  experience: string;
-  status: string;
-  date: string;
-  reason: string;
-}
+import { useState, useEffect } from "react";
+import { getTransfers, submitTransfer, TransferResponse } from "../../api/transfer/transfers";
+import Link from "next/link";
+import Swal from "sweetalert2";
+import { getSchools } from "@/api/school/schools";
+import { requireToken } from "@/api/base/token";
+import router from "next/router";
+import { getCurrentUser } from "@/api/base/jwt";
+import { Search } from "lucide-react"; // ✅ icon import
 
 interface ActionData {
   status: string;
   reason: string;
 }
 
+interface School {
+  id?: number;
+  name: string;
+  district: string;
+  province: string;
+  code?: string;
+}
+
 const TransferTable = () => {
-  const initialTeachers: Teacher[] = [
-    {
-      name: "John Mwansa",
-      nrc: "123456/11/1",
-      tsNo: "TS00123",
-      currentSchool: "Kyawama Secondary",
-      newSchool: "",
-      position: "Subject Teacher",
-      subject: "Mathematics",
-      experience: "5 yrs",
-      status: "Pending",
-      date: "",
-      reason: "",
-    },
-    {
-      name: "Mary Banda",
-      nrc: "987654/22/2",
-      tsNo: "TS00456",
-      currentSchool: "Mwinilunga High",
-      newSchool: "",
-      position: "Head Teacher",
-      subject: "English",
-      experience: "12 yrs",
-      status: "Pending",
-      date: "",
-      reason: "",
-    },
-  ];
-
-  const [teachers, setTeachers] = useState<Teacher[]>(initialTeachers);
+  const [teachers, setTeachers] = useState<TransferResponse[]>([]);
+  const [schools, setSchools] = useState<School[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [showRequestModal, setShowRequestModal] = useState(false);
-  const [showActionModal, setShowActionModal] = useState(false);
-  const [transferRequest, setTransferRequest] = useState({
-    nrc: "",
-    currentSchool: "",
-    newSchool: "",
-    reason: "",
-  });
-  const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
-  const [actionData, setActionData] = useState<ActionData>({
-    status: "Approved",
-    reason: "",
-  });
-
-  // 🔍 Search state
+  const [selectedTeacher, setSelectedTeacher] = useState<TransferResponse | null>(null);
+  const [actionData, setActionData] = useState<ActionData>({ status: "Approved", reason: "" });
   const [searchQuery, setSearchQuery] = useState("");
+  const [submittingRequest, setSubmittingRequest] = useState(false);
 
-  // Handle transfer request submission
-  const handleRequestTransfer = () => {
-    const today = new Date().toISOString().split("T")[0];
-    setTeachers((prev) =>
-      prev.map((t) =>
-        t.nrc === transferRequest.nrc
-          ? {
-              ...t,
-              newSchool: transferRequest.newSchool,
-              status: "Pending",
-              date: today,
-              reason: transferRequest.reason,
-            }
-          : t
-      )
-    );
-    setTransferRequest({ nrc: "", currentSchool: "", newSchool: "", reason: "" });
-    setShowRequestModal(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  const currentUser = getCurrentUser();
+  const teacherId = currentUser?.teacherProfileId ?? 0;
+  const loggedInUserRole = currentUser?.role 
+
+  const [transferRequest, setTransferRequest] = useState({
+    teacherId: teacherId,
+    toSchoolId: 0,
+    reason: "",
+  });
+
+  useEffect(() => {
+    const token = requireToken(router);
+    if (!token) return;
+
+    const fetchTransfers = async () => {
+      try {
+        const data = await getTransfers(token);
+        setTeachers(data);
+      } catch (err: any) {
+        setError(err.message || "Failed to load transfers");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTransfers();
+  }, []);
+
+  useEffect(() => {
+    const fetchSchools = async () => {
+      const token = requireToken(router);
+      if (!token) return;
+      try {
+        const data = await getSchools(token);
+        setSchools(data);
+      } catch (err: any) {
+        console.error("Failed to fetch schools:", err.message);
+        Swal.fire("Error", err.message || "Failed to fetch schools", "error");
+      }
+    };
+    fetchSchools();
+  }, []);
+
+  const handleRequestTransfer = async () => {
+    const token = requireToken(router);
+    if (!token) return;
+    if (!transferRequest.toSchoolId) {
+      Swal.fire("Error", "Please select a new school", "error");
+      return;
+    }
+
+    setSubmittingRequest(true);
+    Swal.fire({ title: "Submitting...", didOpen: () => Swal.showLoading() });
+
+    try {
+      await submitTransfer(transferRequest.teacherId, transferRequest.toSchoolId, token);
+      const data = await getTransfers(token);
+      setTeachers(data);
+      setShowRequestModal(false);
+      setTransferRequest({ teacherId, toSchoolId: 0, reason: "" });
+      Swal.fire("Success", "Transfer request submitted successfully!", "success");
+    } catch (err: any) {
+      Swal.fire("Error", err.message || "Failed to submit transfer request", "error");
+    } finally {
+      setSubmittingRequest(false);
+    }
   };
 
-  // Open admin action modal
-  const openActionModal = (teacher: Teacher) => {
-    setSelectedTeacher(teacher);
-    setActionData({ status: "Approved", reason: teacher.reason || "" });
-    setShowActionModal(true);
-  };
-
-  // Handle approve/reject submission
-  const handleActionSubmit = () => {
-    if (!selectedTeacher) return;
-    setTeachers((prev) =>
-      prev.map((t) =>
-        t.nrc === selectedTeacher.nrc
-          ? { ...t, status: actionData.status, reason: actionData.reason }
-          : t
-      )
-    );
-    setSelectedTeacher(null);
-    setShowActionModal(false);
-  };
-
-  // 🔍 Filter teachers based on search
+  // Filter and paginate
   const filteredTeachers = teachers.filter((t) =>
-    [t.name, t.nrc, t.currentSchool, t.newSchool, t.subject, t.position]
+    [t.teacher.firstName, t.teacher.lastName, t.teacher.nrc, t.teacher.currentSchoolName]
       .join(" ")
       .toLowerCase()
       .includes(searchQuery.toLowerCase())
   );
 
-  return (
-    <div className="relative overflow-x-auto shadow-md sm:rounded-lg p-4">
-      {/* Top Controls: Search + Request Transfer Button */}
-      <div className="flex justify-between items-center mb-4">
-        {/* 🔍 Search Box */}
-        <input
-          type="text"
-          placeholder="Search teacher..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="px-4 py-2 border rounded-lg w-1/3 focus:outline-none focus:ring focus:border-indigo-400"
-        />
+  const totalPages = Math.ceil(filteredTeachers.length / itemsPerPage);
+  const paginatedTeachers = filteredTeachers.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
-        <button
-          onClick={() => setShowRequestModal(true)}
-          className="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-blue-700"
-        >
-          + Request Transfer
-        </button>
+  if (loading) return <p className="text-center py-4">Loading transfers...</p>;
+  if (error) return <p className="text-center py-4 text-red-500">{error}</p>;
+
+  return (
+    <div className="bg-gray-50 dark:bg-gray-900 relative overflow-x-auto shadow-lg rounded-lg p-6">
+      {/* Top Controls */}
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-3">
+        <div className="relative w-full sm:w-1/3">
+          <Search className="absolute left-3 top-3 text-gray-400" size={18} />
+          <input
+            type="text"
+            placeholder="Search teacher..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm"
+          />
+        </div>
+          {loggedInUserRole === "teacher" && (
+              <button
+                onClick={() => setShowRequestModal(true)}
+                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold shadow-md transition-all"
+              >
+                + Request Transfer
+              </button>
+            )}
       </div>
 
       {/* Table */}
-      <table className="w-full text-sm text-left text-gray-500bg-gray-900 dark:text-gray-400">
-        <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
-          <tr>
-            <th className="px-6 py-3">Name</th>
-            <th className="px-6 py-3">NRC No.</th>
-            <th className="px-6 py-3">Current School</th>
-            <th className="px-6 py-3">New School</th>
-            <th className="px-6 py-3">Status</th>
-            <th className="px-6 py-3">Date</th>
-            <th className="px-6 py-3">Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredTeachers.length > 0 ? (
-            filteredTeachers.map((teacher, index) => (
-              <tr
-                key={index}
-                className="odd:bg-white odd:dark:bg-gray-900 even:bg-gray-50 even:dark:bg-gray-800 border-b dark:border-gray-700 border-gray-200"
-              >
-                <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">{teacher.name}</td>
-                <td className="px-6 py-4">{teacher.nrc}</td>
-                <td className="px-6 py-4">{teacher.currentSchool}</td>
-                <td className="px-6 py-4">{teacher.newSchool || "-"}</td>
-                <td className="px-6 py-4">{teacher.status}</td>
-                <td className="px-6 py-4">{teacher.date || "-"}</td>
-                <td className="px-6 py-4">
-                  <a
-                    href="/transfer-view"
-                    className="inline-block px-3 py-1 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors duration-200"
-                  >
-                    View
-                  </a>
-                </td>
-
-              </tr>
-            ))
-          ) : (
+      <div className="overflow-hidden rounded-lg">
+        <table className="w-full text-sm text-left text-gray-600 dark:text-gray-300">
+          <thead className="text-xs uppercase bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
             <tr>
-              <td colSpan={11} className="text-center py-4 text-gray-500">
-                No teachers found
-              </td>
+              {["No", "Name", "NRC", "Current School", "New School", "Status", "Date", "Action"].map((h) => (
+                <th key={h} className="px-6 py-3 font-semibold">
+                  {h}
+                </th>
+              ))}
             </tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {paginatedTeachers.length > 0 ? (
+              paginatedTeachers.map((t, i) => (
+                <tr
+                  key={t.id}
+                  className="odd:bg-white even:bg-gray-50 dark:odd:bg-gray-900 dark:even:bg-gray-800 border-b dark:border-gray-700"
+                >
+                  <td className="px-6 py-3 font-medium">{i + 1}</td>
+                  <td className="px-6 py-3 font-medium">{t.teacher.firstName} {t.teacher.lastName}</td>
+                  <td className="px-6 py-3">{t.teacher.nrc}</td>
+                  <td className="px-6 py-3">{t.teacher.currentSchool?.name || "-"}</td>
+                  <td className="px-6 py-3">{t.toSchool?.name || "-"}</td>
+                  <td className="px-6 py-3">
+                    <span
+                      className={`px-2 py-1 rounded-md text-xs font-semibold ${t.status === "approved"
+                          ? "bg-green-100 text-green-700"
+                          : t.status === "rejected"
+                            ? "bg-red-100 text-red-700"
+                            : t.status === "headteacher_approved"
+                              ? "bg-blue-100 text-blue-700"
+                              : "bg-gray-100 text-gray-700"
+                        }`}
+                    >
+                      {t.status.replace(/_/g, " ").toUpperCase()}
+                    </span>
+                  </td>
+                  <td className="px-6 py-3">{new Date(t.createdAt).toLocaleDateString()}</td>
+                  <td className="px-6 py-3">
+                    <Link
+                      href={`/transfer-view/${t.id}`}
+                      className="text-indigo-600 hover:text-indigo-800 font-semibold"
+                    >
+                      View
+                    </Link>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={8} className="text-center py-6 text-gray-500">
+                  No teachers found
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
 
-      {/* Transfer Request Modal */}
+      {/* Pagination */}
+      <div className="flex justify-between items-center mt-6">
+        <span className="text-sm text-gray-600 dark:text-gray-400">
+          Page {currentPage} of {totalPages}
+        </span>
+        <div className="flex gap-2">
+          <button
+            className="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg text-gray-800 dark:text-white hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-40"
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage((p) => p - 1)}
+          >
+            Prev
+          </button>
+          <button
+            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-40"
+            disabled={currentPage === totalPages}
+            onClick={() => setCurrentPage((p) => p + 1)}
+          >
+            Next
+          </button>
+        </div>
+      </div>
+
+      {/* Request Modal */}
       {showRequestModal && (
-        <div className="fixed inset-0 bg-opacity-20 flex justify-center items-center z-50">
-            <div className="bg-gray-900 rounded-lg shadow-lg p-6 w-full max-w-lg">
-              <h2 className="text-white font-bold mb-4">Request Transfer</h2>
-              <div className="grid grid-cols-1 gap-4">
-                <input
-                  type="text"
-                  placeholder="NRC No."
-                  value={transferRequest.nrc}
-                  onChange={(e) =>
-                    setTransferRequest({ ...transferRequest, nrc: e.target.value })
-                  }
-                  className="px-3 py-2 border border-gray-700 rounded bg-gray-800 text-white placeholder-gray-400"
-                />
-                <input
-                  type="text"
-                  placeholder="Current School"
-                  value={transferRequest.currentSchool}
-                  onChange={(e) =>
-                    setTransferRequest({ ...transferRequest, currentSchool: e.target.value })
-                  }
-                  className="px-3 py-2 border border-gray-700 rounded bg-gray-800 text-white placeholder-gray-400"
-                />
-                <input
-                  type="text"
-                  placeholder="New School"
-                  value={transferRequest.newSchool}
-                  onChange={(e) =>
-                    setTransferRequest({ ...transferRequest, newSchool: e.target.value })
-                  }
-                  className="px-3 py-2 border border-gray-700 rounded bg-gray-800 text-white placeholder-gray-400"
-                />
-                <textarea
-                  placeholder="Reason for Transfer"
-                  value={transferRequest.reason}
-                  onChange={(e) =>
-                    setTransferRequest({ ...transferRequest, reason: e.target.value })
-                  }
-                  className="px-3 py-2 border border-gray-700 rounded bg-gray-800 text-white placeholder-gray-400"
-                />
-              </div>
-              <div className="flex justify-end gap-2 mt-4">
-                <button
-                  onClick={() => setShowRequestModal(false)}
-                  className="px-4 py-2 bg-red-400 text-white rounded hover:bg-gray-500"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleRequestTransfer}
-                  className="px-4 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-700"
-                >
-                  Submit
-                </button>
-              </div>
-            </div>
-          </div>
-
-      )}
-
-      {/* Admin Action Modal */}
-      {showActionModal && selectedTeacher && (
-        <div className="fixed inset-0 bg-opacity-20 flex justify-center items-center z-50">
-          <div className="bg-gray-900 rounded-lg shadow-lg p-6 w-full max-w-md">
-            <h2 className="text-white text-lg font-bold mb-4">
-              Action on {selectedTeacher.name}
-            </h2>
-            <div className="grid grid-cols-1 gap-4">
+        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 backdrop-blur-sm">
+          <div className="bg-gray-900 text-white rounded-lg shadow-xl p-6 w-full max-w-lg">
+            <h2 className="text-lg font-bold mb-4">Request Transfer</h2>
+            <div className="grid gap-4">
               <select
-                value={actionData.status}
+                value={transferRequest.toSchoolId}
                 onChange={(e) =>
-                  setActionData({ ...actionData, status: e.target.value })
+                  setTransferRequest({ ...transferRequest, toSchoolId: Number(e.target.value) })
                 }
-                className="px-3 py-2 border border-gray-700 rounded bg-gray-800 text-white placeholder-gray-400"
+                className="px-3 py-2 border border-gray-700 rounded bg-gray-800 focus:ring-2 focus:ring-indigo-500"
               >
-                <option value="Approved" className="text-black">
-                  Approve
-                </option>
-                <option value="Rejected" className="text-black">
-                  Reject
-                </option>
+                <option value={0}>Select School</option>
+                {schools.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name} ({s.code})
+                  </option>
+                ))}
               </select>
+
               <textarea
-                placeholder="Reason"
-                value={actionData.reason}
+                placeholder="Reason for Transfer"
+                value={transferRequest.reason}
                 onChange={(e) =>
-                  setActionData({ ...actionData, reason: e.target.value })
+                  setTransferRequest({ ...transferRequest, reason: e.target.value })
                 }
-                className="px-3 py-2 border border-gray-700 rounded bg-gray-800 text-white placeholder-gray-400"
+                className="px-3 py-2 border border-gray-700 rounded bg-gray-800 focus:ring-2 focus:ring-indigo-500"
               />
             </div>
-            <div className="flex justify-end gap-2 mt-4">
+
+            <div className="flex justify-end gap-3 mt-5">
               <button
-                onClick={() => setShowActionModal(false)}
-                className="px-4 py-2 bg-red-400 text-white rounded hover:bg-gray-500"
+                onClick={() => setShowRequestModal(false)}
+                disabled={submittingRequest}
+                className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded"
               >
                 Cancel
               </button>
               <button
-                onClick={handleActionSubmit}
-                className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-700"
+                onClick={handleRequestTransfer}
+                disabled={submittingRequest}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded"
               >
-                Submit
+                {submittingRequest ? "Submitting..." : "Submit"}
               </button>
             </div>
           </div>
         </div>
-
       )}
     </div>
   );
